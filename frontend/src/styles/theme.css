@@ -1,0 +1,28 @@
+:root {
+  --erp-header-height: 48px;
+  --erp-sidebar-width: 236px;
+  --erp-sidebar-collapsed-width: 60px;
+  --erp-font-size: 0.875rem;
+  --erp-row-height: 36px;
+  --erp-border: #d9dee7;
+  --erp-bg: #f5f7fb;
+  --erp-ink: #202735;
+}
+
+body {
+  margin: 0;
+  background: var(--erp-bg);
+  color: var(--erp-ink);
+  font-size: var(--erp-font-size);
+}
+
+.btn,
+.form-control,
+.form-select {
+  border-radius: 6px;
+}
+
+.table {
+  --bs-table-cell-padding-y: 0.35rem;
+  --bs-table-cell-padding-x: 0.5rem;
+}
