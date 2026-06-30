@@ -16,6 +16,15 @@ body {
   font-size: var(--erp-font-size);
 }
 
+.login-page {
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.login-panel {
+  width: min(100%, 360px);
+}
+
 .erp-shell {
   min-height: 100vh;
 }
