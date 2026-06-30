@@ -16,6 +16,85 @@ body {
   font-size: var(--erp-font-size);
 }
 
+.erp-shell {
+  min-height: 100vh;
+}
+
+.erp-header {
+  height: var(--erp-header-height);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.erp-body {
+  display: flex;
+  min-height: calc(100vh - var(--erp-header-height));
+}
+
+.erp-sidebar {
+  width: var(--erp-sidebar-width);
+  flex: 0 0 var(--erp-sidebar-width);
+  height: calc(100vh - var(--erp-header-height));
+  position: sticky;
+  top: var(--erp-header-height);
+  overflow-y: auto;
+  transition: width 0.16s ease, flex-basis 0.16s ease;
+}
+
+.erp-sidebar.collapsed {
+  width: var(--erp-sidebar-collapsed-width);
+  flex-basis: var(--erp-sidebar-collapsed-width);
+}
+
+.erp-sidebar .nav-link {
+  color: #344054;
+  min-height: 34px;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  white-space: nowrap;
+}
+
+.erp-sidebar .nav-link.active {
+  background: #0d6efd;
+  color: white;
+}
+
+.erp-sidebar.collapsed .nav-link {
+  justify-content: center;
+}
+
+.erp-main {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.user-chip {
+  max-width: 160px;
+}
+
+.role-Admin {
+  background: #1f6feb;
+}
+
+.role-Manager {
+  background: #0f766e;
+}
+
+.role-Worker {
+  background: #7c3aed;
+}
+
 .btn,
 .form-control,
 .form-select {
@@ -25,4 +104,31 @@ body {
 .table {
   --bs-table-cell-padding-y: 0.35rem;
   --bs-table-cell-padding-x: 0.5rem;
+}
+
+.page-toolbar {
+  min-height: 42px;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.3rem 0.45rem;
+}
+
+@media (max-width: 768px) {
+  .erp-sidebar {
+    position: fixed;
+    left: 0;
+    z-index: 25;
+    box-shadow: 0 8px 20px rgba(16, 24, 40, 0.14);
+  }
+
+  .erp-sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .erp-main {
+    padding: 0.5rem;
+  }
 }
