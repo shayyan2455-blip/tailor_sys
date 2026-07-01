@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -20,29 +20,29 @@ function validate(req) {
 const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
     SELECT p.*, u.username AS recorded_by_name
-    FROM dbo.Payments p INNER JOIN dbo.Users u ON u.id = p.recorded_by
-    WHERE (@order_id IS NULL OR p.order_id = @order_id)
+    FROM Payments p INNER JOIN Users u ON u.id = p.recorded_by
+    WHERE ($1 IS NULL OR p.order_id = $1)
     ORDER BY p.payment_date DESC, p.id DESC;
-  `, { order_id: { type: sql.Int, value: req.query.order_id ? Number(req.query.order_id) : null } });
-  res.json({ data: result.recordset });
+  `, [req.query.order_id ? Number(req.query.order_id) : null]);
+  res.json({ data: result.rows });
 });
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    INSERT INTO dbo.Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
-    OUTPUT inserted.*
-    VALUES(@order_id, @amount, @payment_date, @payment_type, @reference, @notes, @recorded_by);
-  `, {
-    order_id: { type: sql.Int, value: Number(req.body.order_id) },
-    amount: { type: sql.Decimal(12, 2), value: Number(req.body.amount) },
-    payment_date: { type: sql.Date, value: req.body.payment_date },
-    payment_type: { type: sql.NVarChar(20), value: req.body.payment_type },
-    reference: { type: sql.NVarChar(120), value: req.body.reference || null },
-    notes: { type: sql.NVarChar(500), value: req.body.notes || null },
-    recorded_by: { type: sql.Int, value: req.session.user.id }
-  });
-  res.status(201).json({ data: result.recordset[0] });
+    INSERT INTO Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
+    VALUES($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *;
+  `, [
+    Number(req.body.order_id),
+    Number(req.body.amount),
+    req.body.payment_date,
+    req.body.payment_type,
+    req.body.reference || null,
+    req.body.notes || null,
+    req.session.user.id
+  ]);
+  res.status(201).json({ data: result.rows[0] });
 });
 
 module.exports = { rules, list, create };

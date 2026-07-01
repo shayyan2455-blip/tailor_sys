@@ -20,9 +20,9 @@ export function MasterDataProvider({ children }) {
   const load = useCallback(async (key, force = false) => {
     if (!force && loaded[key]) return data[key];
     const response = await loaders[key]();
-    setData((current) => ({ ...current, [key]: response.data }));
+    setData((current) => ({ ...current, [key]: response.data.data }));
     setLoaded((current) => ({ ...current, [key]: true }));
-    return response.data;
+    return response.data.data;
   }, [data, loaded]);
 
   const invalidate = useCallback((key) => {

@@ -4,6 +4,7 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import CustomerFormModal from './CustomerFormModal.jsx';
 import { useMasterData } from '../../context/MasterDataContext.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function CustomerList() {
   const [rows, setRows] = useState([]);
@@ -13,13 +14,13 @@ export default function CustomerList() {
 
   async function load() {
     const response = await customerApi.list();
-    setRows(response.data);
+    setRows(response.data.data);
   }
 
   useEffect(() => { load(); }, []);
 
   async function save(payload) {
-    if (editing) await customerApi.update(editing.id, payload);
+    if (editing?.id) await customerApi.update(editing.id, payload);
     else await customerApi.create(payload);
     invalidate('customers');
     await load();
@@ -38,10 +39,11 @@ export default function CustomerList() {
         <h1 className="h5 mb-0">Customers</h1>
         <button className="btn btn-sm btn-primary" type="button" onClick={() => setEditing({})}><i className="bi bi-plus-lg me-1" />Customer</button>
       </div>
-      <DataTable columns={[
+      <DataTable searchable columns={[
         { key: 'name', label: 'Name' },
         { key: 'mobile', label: 'Mobile' },
-        { key: 'address', label: 'Address' }
+        { key: 'address', label: 'Address' },
+        { key: 'created_at', label: 'Created', render: (row) => formatDate(row.created_at) }
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">
           <button className="btn btn-outline-secondary" type="button" onClick={() => setEditing(row)} title="Edit"><i className="bi bi-pencil" /></button>

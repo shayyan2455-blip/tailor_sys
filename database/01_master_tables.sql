@@ -6,8 +6,10 @@ CREATE TABLE dbo.Workers (
     name NVARCHAR(120) NOT NULL,
     mobile NVARCHAR(30) NULL,
     wage_rate DECIMAL(12,2) NOT NULL CONSTRAINT DF_Workers_wage_rate DEFAULT (0),
+    default_stage NVARCHAR(20) NULL,
     is_active BIT NOT NULL CONSTRAINT DF_Workers_is_active DEFAULT (1),
-    created_at DATETIME2(0) NOT NULL CONSTRAINT DF_Workers_created_at DEFAULT (SYSUTCDATETIME())
+    created_at DATETIME2(0) NOT NULL CONSTRAINT DF_Workers_created_at DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT CK_Workers_default_stage CHECK (default_stage IS NULL OR default_stage IN (N'Booked', N'Cutting', N'Stitching', N'Trial', N'Alteration', N'Pressing', N'Ready', N'Delivered'))
 );
 GO
 
@@ -48,5 +50,24 @@ CREATE TABLE dbo.Fabrics (
     cost_per_unit DECIMAL(12,2) NOT NULL CONSTRAINT DF_Fabrics_cost_per_unit DEFAULT (0),
     supplier NVARCHAR(160) NULL,
     is_active BIT NOT NULL CONSTRAINT DF_Fabrics_is_active DEFAULT (1)
+);
+GO
+
+CREATE TABLE dbo.CustomerMeasurements (
+    id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_CustomerMeasurements PRIMARY KEY,
+    customer_id INT NOT NULL,
+    neck DECIMAL(6,2) NULL,
+    chest DECIMAL(6,2) NULL,
+    waist DECIMAL(6,2) NULL,
+    hip DECIMAL(6,2) NULL,
+    shoulder DECIMAL(6,2) NULL,
+    sleeve DECIMAL(6,2) NULL,
+    length DECIMAL(6,2) NULL,
+    collar DECIMAL(6,2) NULL,
+    shalwar_len DECIMAL(6,2) NULL,
+    pancha DECIMAL(6,2) NULL,
+    updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_CustomerMeasurements_updated_at DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT UQ_CustomerMeasurements_customer UNIQUE (customer_id),
+    CONSTRAINT FK_CustomerMeasurements_customer FOREIGN KEY (customer_id) REFERENCES dbo.Customers(id) ON DELETE CASCADE
 );
 GO

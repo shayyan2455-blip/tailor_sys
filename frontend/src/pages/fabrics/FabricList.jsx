@@ -4,6 +4,7 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import FabricFormModal from './FabricFormModal.jsx';
 import { useMasterData } from '../../context/MasterDataContext.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function FabricList() {
   const [rows, setRows] = useState([]);
@@ -13,13 +14,13 @@ export default function FabricList() {
 
   async function load() {
     const response = await fabricApi.list();
-    setRows(response.data);
+    setRows(response.data.data);
   }
 
   useEffect(() => { load(); }, []);
 
   async function save(payload) {
-    if (editing) await fabricApi.update(editing.id, payload);
+    if (editing?.id) await fabricApi.update(editing.id, payload);
     else await fabricApi.create(payload);
     invalidate('fabrics');
     await load();
@@ -38,7 +39,7 @@ export default function FabricList() {
         <h1 className="h5 mb-0">Fabrics</h1>
         <button className="btn btn-sm btn-primary" type="button" onClick={() => setEditing({})}><i className="bi bi-plus-lg me-1" />Fabric</button>
       </div>
-      <DataTable columns={[
+      <DataTable searchable columns={[
         { key: 'name', label: 'Name' },
         { key: 'cost_per_unit', label: 'Cost / Unit' },
         { key: 'supplier', label: 'Supplier' },

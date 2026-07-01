@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query, transaction } = require('../config/db');
+const { pg, query, transaction } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -23,86 +23,100 @@ function validate(req) {
 
 function itemParams(item, orderId, index) {
   return {
-    [`order_id_${index}`]: { type: sql.Int, value: orderId },
-    [`garment_type_${index}`]: { type: sql.NVarChar(100), value: item.garment_type },
-    [`qty_${index}`]: { type: sql.Int, value: Number(item.qty) },
-    [`rate_${index}`]: { type: sql.Decimal(12, 2), value: Number(item.rate) },
-    [`fabric_id_${index}`]: { type: sql.Int, value: item.fabric_id || null },
-    [`remarks_${index}`]: { type: sql.NVarChar(500), value: item.remarks || null }
+    [`order_id_${index}`]: orderId,
+    [`garment_type_${index}`]: item.garment_type,
+    [`qty_${index}`]: Number(item.qty),
+    [`rate_${index}`]: Number(item.rate),
+    [`fabric_id_${index}`]: item.fabric_id || null,
+    [`remarks_${index}`]: item.remarks || null
   };
 }
 
 async function insertItems(run, orderId, items) {
   for (let index = 0; index < items.length; index += 1) {
     await run(`
-      INSERT INTO dbo.OrderItems(order_id, garment_type, qty, rate, fabric_id, remarks, stage_booked_at)
-      VALUES (@order_id_${index}, @garment_type_${index}, @qty_${index}, @rate_${index}, @fabric_id_${index}, @remarks_${index}, SYSUTCDATETIME());
-    `, itemParams(items[index], orderId, index));
+      INSERT INTO OrderItems(order_id, garment_type, qty, rate, fabric_id, remarks, stage_booked_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW());
+    `, [orderId, items[index].garment_type, Number(items[index].qty), Number(items[index].rate), items[index].fabric_id || null, items[index].remarks || null]);
   }
 }
 
 function measurementParams(orderId, measurements = {}) {
-  const params = { order_id: { type: sql.Int, value: orderId } };
+  const params = [orderId];
   for (const field of measurementFields) {
-    params[field] = { type: sql.Decimal(6, 2), value: measurements[field] === '' || measurements[field] == null ? null : Number(measurements[field]) };
+    params.push(measurements[field] === '' || measurements[field] == null ? null : Number(measurements[field]));
   }
   return params;
 }
 
 async function upsertMeasurement(run, orderId, measurements) {
+  const params = measurementParams(orderId, measurements);
+  const fields = measurementFields.join(', ');
+  const placeholders = measurementFields.map((_, i) => `$${i + 2}`).join(', ');
+  const updateFields = measurementFields.map((f, i) => `${f} = $${i + 2}`).join(', ');
+  
   await run(`
-    MERGE dbo.Measurements AS target
-    USING (SELECT @order_id AS order_id) AS source
-    ON target.order_id = source.order_id
-    WHEN MATCHED THEN UPDATE SET
-      neck=@neck, chest=@chest, waist=@waist, hip=@hip, shoulder=@shoulder, sleeve=@sleeve,
-      length=@length, collar=@collar, shalwar_len=@shalwar_len, pancha=@pancha
-    WHEN NOT MATCHED THEN INSERT(order_id, neck, chest, waist, hip, shoulder, sleeve, length, collar, shalwar_len, pancha)
-      VALUES(@order_id, @neck, @chest, @waist, @hip, @shoulder, @sleeve, @length, @collar, @shalwar_len, @pancha);
-  `, measurementParams(orderId, measurements));
+    INSERT INTO Measurements(order_id, ${fields})
+    VALUES ($1, ${placeholders})
+    ON CONFLICT (order_id) DO UPDATE SET ${updateFields};
+  `, params);
 }
 
 const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
-    SELECT TOP 300 o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
+    SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
            o.current_stage, o.status, c.name AS customer_name, c.mobile
-    FROM dbo.Orders o
-    INNER JOIN dbo.Customers c ON c.id = o.customer_id
-    WHERE (@status IS NULL OR o.status = @status)
-      AND (@stage IS NULL OR o.current_stage = @stage)
-      AND (@from IS NULL OR o.order_date >= @from)
-      AND (@to IS NULL OR o.order_date <= @to)
-    ORDER BY o.order_date DESC, o.id DESC;
-  `, {
-    status: { type: sql.NVarChar(20), value: req.query.status || null },
-    stage: { type: sql.NVarChar(20), value: req.query.stage || null },
-    from: { type: sql.Date, value: req.query.from || null },
-    to: { type: sql.Date, value: req.query.to || null }
-  });
-  res.json({ data: result.recordset });
+    FROM Orders o
+    INNER JOIN Customers c ON c.id = o.customer_id
+    WHERE ($1 IS NULL OR o.status = $1)
+      AND ($2 IS NULL OR o.current_stage = $2)
+      AND ($3 IS NULL OR o.order_date >= $3)
+      AND ($4 IS NULL OR o.order_date <= $4)
+    ORDER BY o.order_date DESC, o.id DESC
+    LIMIT 300;
+  `, [req.query.status || null, req.query.stage || null, req.query.from || null, req.query.to || null]);
+  res.json({ data: result.rows });
+});
+
+const deliveryList = asyncHandler(async (req, res) => {
+  const result = await query(req, `
+    SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
+           o.current_stage, o.status, c.name AS customer_name, c.mobile, c.address
+    FROM Orders o
+    INNER JOIN Customers c ON c.id = o.customer_id
+    WHERE o.current_stage = 'Delivered'
+      AND o.status <> 'Delivered'
+    ORDER BY o.delivery_date, o.id
+    LIMIT 300;
+  `, []);
+  res.json({ data: result.rows });
 });
 
 const detail = asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const result = await query(req, `
+  const orderResult = await query(req, `
     SELECT o.*, c.name AS customer_name, c.mobile, c.address
-    FROM dbo.Orders o INNER JOIN dbo.Customers c ON c.id = o.customer_id
-    WHERE o.id = @id;
+    FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
+    WHERE o.id = $1;
+  `, [id]);
+  const itemsResult = await query(req, `
     SELECT oi.*, f.name AS fabric_name
-    FROM dbo.OrderItems oi LEFT JOIN dbo.Fabrics f ON f.id = oi.fabric_id
-    WHERE oi.order_id = @id ORDER BY oi.id;
-    SELECT * FROM dbo.Measurements WHERE order_id = @id;
+    FROM OrderItems oi LEFT JOIN Fabrics f ON f.id = oi.fabric_id
+    WHERE oi.order_id = $1 ORDER BY oi.id;
+  `, [id]);
+  const measurementsResult = await query(req, `SELECT * FROM Measurements WHERE order_id = $1;`, [id]);
+  const paymentsResult = await query(req, `
     SELECT p.*, u.username AS recorded_by_name
-    FROM dbo.Payments p INNER JOIN dbo.Users u ON u.id = p.recorded_by
-    WHERE p.order_id = @id ORDER BY p.payment_date, p.id;
-  `, { id: { type: sql.Int, value: id } });
-  if (!result.recordsets[0][0]) throw httpError(404, 'Order not found');
+    FROM Payments p INNER JOIN Users u ON u.id = p.recorded_by
+    WHERE p.order_id = $1 ORDER BY p.payment_date, p.id;
+  `, [id]);
+  if (!orderResult.rows[0]) throw httpError(404, 'Order not found');
   res.json({
     data: {
-      order: result.recordsets[0][0],
-      items: result.recordsets[1],
-      measurements: result.recordsets[2][0] || null,
-      payments: result.recordsets[3]
+      order: orderResult.rows[0],
+      items: itemsResult.rows,
+      measurements: measurementsResult.rows[0] || null,
+      payments: paymentsResult.rows
     }
   });
 });
@@ -111,34 +125,35 @@ const create = asyncHandler(async (req, res) => {
   validate(req);
   const data = await transaction(req, async (run) => {
     const inserted = await run(`
-      INSERT INTO dbo.Orders(customer_id, order_date, delivery_date, notes, created_by)
-      OUTPUT inserted.id
-      VALUES (@customer_id, @order_date, @delivery_date, @notes, @created_by);
-    `, {
-      customer_id: { type: sql.Int, value: Number(req.body.customer_id) },
-      order_date: { type: sql.Date, value: req.body.order_date },
-      delivery_date: { type: sql.Date, value: req.body.delivery_date || null },
-      notes: { type: sql.NVarChar(1000), value: req.body.notes || null },
-      created_by: { type: sql.Int, value: req.session.user.id }
-    });
-    const orderId = inserted.recordset[0].id;
+      INSERT INTO Orders(customer_id, order_date, delivery_date, notes, created_by)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id;
+    `, [Number(req.body.customer_id), req.body.order_date, req.body.delivery_date || null, req.body.notes || null, req.session.user.id]);
+    const orderId = inserted.rows[0].id;
     await insertItems(run, orderId, req.body.items);
     await upsertMeasurement(run, orderId, req.body.measurements || {});
+    
+    // Auto-assign workers based on their default_stage
+    const workersWithDefaultStage = await run(`
+      SELECT id, default_stage FROM Workers
+      WHERE default_stage IS NOT NULL AND is_active = true;
+    `);
+    
+    for (const worker of workersWithDefaultStage.rows) {
+      await run(`
+        INSERT INTO WorkAssignments(order_id, worker_id, stage)
+        VALUES($1, $2, $3);
+      `, [orderId, worker.id, worker.default_stage]);
+    }
+    
     if (Number(req.body.advance || 0) > 0) {
       await run(`
-        INSERT INTO dbo.Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
-        VALUES(@order_id, @amount, @payment_date, N'Advance', @reference, @notes, @recorded_by);
-      `, {
-        order_id: { type: sql.Int, value: orderId },
-        amount: { type: sql.Decimal(12, 2), value: Number(req.body.advance) },
-        payment_date: { type: sql.Date, value: req.body.order_date },
-        reference: { type: sql.NVarChar(120), value: req.body.advance_reference || null },
-        notes: { type: sql.NVarChar(500), value: 'Order advance' },
-        recorded_by: { type: sql.Int, value: req.session.user.id }
-      });
+        INSERT INTO Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
+        VALUES($1, $2, $3, 'Advance', $4, $5, $6);
+      `, [orderId, Number(req.body.advance), req.body.order_date, req.body.advance_reference || null, 'Order advance', req.session.user.id]);
     }
-    const summary = await run('SELECT * FROM dbo.Orders WHERE id = @id;', { id: { type: sql.Int, value: orderId } });
-    return summary.recordset[0];
+    const summary = await run('SELECT * FROM Orders WHERE id = $1;', [orderId]);
+    return summary.rows[0];
   });
   res.status(201).json({ data });
 });
@@ -148,25 +163,19 @@ const update = asyncHandler(async (req, res) => {
   const orderId = Number(req.params.id);
   const data = await transaction(req, async (run) => {
     const updated = await run(`
-      UPDATE dbo.Orders
-      SET customer_id=@customer_id, order_date=@order_date, delivery_date=@delivery_date, notes=@notes
-      OUTPUT inserted.id
-      WHERE id=@id;
-    `, {
-      id: { type: sql.Int, value: orderId },
-      customer_id: { type: sql.Int, value: Number(req.body.customer_id) },
-      order_date: { type: sql.Date, value: req.body.order_date },
-      delivery_date: { type: sql.Date, value: req.body.delivery_date || null },
-      notes: { type: sql.NVarChar(1000), value: req.body.notes || null }
-    });
-    if (!updated.recordset[0]) throw httpError(404, 'Order not found');
-    await run('DELETE FROM dbo.OrderItems WHERE order_id=@id;', { id: { type: sql.Int, value: orderId } });
+      UPDATE Orders
+      SET customer_id=$1, order_date=$2, delivery_date=$3, notes=$4
+      WHERE id=$5
+      RETURNING id;
+    `, [Number(req.body.customer_id), req.body.order_date, req.body.delivery_date || null, req.body.notes || null, orderId]);
+    if (!updated.rows[0]) throw httpError(404, 'Order not found');
+    await run('DELETE FROM OrderItems WHERE order_id=$1;', [orderId]);
     await insertItems(run, orderId, req.body.items);
     await upsertMeasurement(run, orderId, req.body.measurements || {});
-    const summary = await run('SELECT * FROM dbo.Orders WHERE id = @id;', { id: { type: sql.Int, value: orderId } });
-    return summary.recordset[0];
+    const summary = await run('SELECT * FROM Orders WHERE id = $1;', [orderId]);
+    return summary.rows[0];
   });
   res.json({ data });
 });
 
-module.exports = { rules, list, detail, create, update };
+module.exports = { rules, list, detail, create, update, deliveryList };

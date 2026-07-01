@@ -6,5 +6,6 @@ export const reportApi = {
   deliveredOrders: (params) => api.get('/reports/delivered-orders', { params }),
   recovery: (params) => api.get('/reports/recovery', { params }),
   workerLedger: (params) => api.get('/reports/worker-ledger', { params }),
-  profit: (params) => api.get('/reports/profit', { params })
+  profit: (params) => api.get('/reports/profit', { params }),
+  dashboardStats: () => api.get('/reports/dashboard-stats')
 };

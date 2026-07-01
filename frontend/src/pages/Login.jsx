@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { authApi } from '../api/authApi';
 
 export default function Login() {
   const { login, isAuthenticated, user } = useAuth();
@@ -9,6 +10,12 @@ export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [otpMode, setOtpMode] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [forgotForm, setForgotForm] = useState({ username: '', otp: '', newPassword: '' });
+  const [message, setMessage] = useState('');
 
   if (isAuthenticated) {
     return <Navigate to={user?.role === 'Worker' ? '/production' : '/'} replace />;
@@ -16,38 +23,170 @@ export default function Login() {
 
   async function submit(event) {
     event.preventDefault();
+    event.stopPropagation();
+    console.log('Form submission prevented');
     setError('');
     setBusy(true);
     try {
+      console.log('Attempting login with:', form.username);
       const loggedIn = await login(form);
+      console.log('Login successful:', loggedIn);
       const target = location.state?.from?.pathname || (loggedIn.role === 'Worker' ? '/production' : '/');
+      console.log('Navigating to:', target);
       navigate(target, { replace: true });
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.error?.message || 'Login failed');
     } finally {
       setBusy(false);
     }
   }
 
+  async function handleForgotPassword(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      await authApi.forgotPassword({ username: forgotForm.username });
+      setMessage('OTP has been sent to your email');
+      setOtpMode(true);
+    } catch (err) {
+      setError(err.error?.message || 'Failed to send OTP');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleVerifyOTP(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      await authApi.verifyOTP({ username: forgotForm.username, otp: forgotForm.otp });
+      setMessage('OTP verified. Please set your new password');
+      setResetMode(true);
+    } catch (err) {
+      setError(err.error?.message || 'Invalid OTP');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResetPassword(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      await authApi.resetPassword({ 
+        username: forgotForm.username, 
+        otp: forgotForm.otp, 
+        newPassword: forgotForm.newPassword 
+      });
+      setMessage('Password reset successfully. Please login with your new password');
+      setForgotMode(false);
+      setOtpMode(false);
+      setResetMode(false);
+      setForgotForm({ username: '', otp: '', newPassword: '' });
+    } catch (err) {
+      setError(err.error?.message || 'Failed to reset password');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function resetForgotFlow() {
+    setForgotMode(false);
+    setOtpMode(false);
+    setResetMode(false);
+    setForgotForm({ username: '', otp: '', newPassword: '' });
+    setError('');
+    setMessage('');
+  }
+
   return (
     <main className="login-page d-flex align-items-center justify-content-center">
-      <form className="login-panel bg-white border rounded-2 p-3" onSubmit={submit}>
+      <form className="login-panel bg-white border rounded-2 p-3" onSubmit={forgotMode ? (resetMode ? handleResetPassword : otpMode ? handleVerifyOTP : handleForgotPassword) : submit}>
         <div className="d-flex align-items-center gap-2 mb-3">
           <i className="bi bi-scissors fs-4 text-primary" />
           <div>
             <h1 className="h5 mb-0">Tailor ERP</h1>
-            <div className="small text-muted">Secure staff login</div>
+            <div className="small text-muted">{forgotMode ? 'Password Recovery' : 'Secure staff login'}</div>
           </div>
         </div>
         {error && <div className="alert alert-danger py-2 small">{error}</div>}
-        <label className="form-label small">Username</label>
-        <input className="form-control form-control-sm mb-2" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required autoFocus />
-        <label className="form-label small">Password</label>
-        <input className="form-control form-control-sm mb-3" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
-        <button className="btn btn-primary btn-sm w-100" type="submit" disabled={busy}>
-          <i className="bi bi-box-arrow-in-right me-1" />
-          Sign in
-        </button>
+        {message && <div className="alert alert-success py-2 small">{message}</div>}
+        
+        {!forgotMode ? (
+          <>
+            <label className="form-label small">Email</label>
+            <input className="form-control form-control-sm mb-2" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required autoFocus />
+            <label className="form-label small">Password</label>
+            <input className="form-control form-control-sm mb-2" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
+            <div className="form-check mb-3">
+              <input className="form-check-input" type="checkbox" id="showPassword" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+              <label className="form-check-label small" htmlFor="showPassword">Show password</label>
+            </div>
+            <button className="btn btn-primary btn-sm w-100 mb-2" type="submit" disabled={busy}>
+              <i className="bi bi-box-arrow-in-right me-1" />
+              Sign in
+            </button>
+            <button className="btn btn-link btn-sm w-100 text-decoration-none" type="button" onClick={() => setForgotMode(true)}>
+              Forgot password?
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="form-label small">Email</label>
+            <input 
+              className="form-control form-control-sm mb-2" 
+              value={forgotForm.username} 
+              onChange={(event) => setForgotForm({ ...forgotForm, username: event.target.value })} 
+              required 
+              disabled={otpMode || resetMode}
+              autoFocus={!otpMode && !resetMode}
+            />
+            
+            {otpMode && (
+              <>
+                <label className="form-label small">OTP (8 digits)</label>
+                <input 
+                  className="form-control form-control-sm mb-2" 
+                  value={forgotForm.otp} 
+                  onChange={(event) => setForgotForm({ ...forgotForm, otp: event.target.value })} 
+                  required 
+                  maxLength={8}
+                  autoFocus={!resetMode}
+                />
+              </>
+            )}
+            
+            {resetMode && (
+              <>
+                <label className="form-label small">New Password</label>
+                <input 
+                  className="form-control form-control-sm mb-2" 
+                  type="password" 
+                  value={forgotForm.newPassword} 
+                  onChange={(event) => setForgotForm({ ...forgotForm, newPassword: event.target.value })} 
+                  required 
+                  minLength={8}
+                  autoFocus
+                />
+                <div className="form-text small mb-2">Must be at least 8 characters</div>
+              </>
+            )}
+            
+            <button className="btn btn-primary btn-sm w-100 mb-2" type="submit" disabled={busy}>
+              {resetMode ? 'Reset Password' : otpMode ? 'Verify OTP' : 'Send OTP'}
+            </button>
+            <button className="btn btn-link btn-sm w-100 text-decoration-none" type="button" onClick={resetForgotFlow}>
+              Back to login
+            </button>
+          </>
+        )}
       </form>
     </main>
   );

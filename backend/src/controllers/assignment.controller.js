@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -17,36 +17,30 @@ function validate(req) {
 const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
     SELECT wa.*, w.name AS worker_name, c.name AS customer_name, o.delivery_date
-    FROM dbo.WorkAssignments wa
-    INNER JOIN dbo.Workers w ON w.id = wa.worker_id
-    INNER JOIN dbo.Orders o ON o.id = wa.order_id
-    INNER JOIN dbo.Customers c ON c.id = o.customer_id
-    WHERE (@order_id IS NULL OR wa.order_id = @order_id)
+    FROM WorkAssignments wa
+    INNER JOIN Workers w ON w.id = wa.worker_id
+    INNER JOIN Orders o ON o.id = wa.order_id
+    INNER JOIN Customers c ON c.id = o.customer_id
+    WHERE ($1 IS NULL OR wa.order_id = $1)
     ORDER BY wa.completed_at, wa.assigned_at DESC;
-  `, { order_id: { type: sql.Int, value: req.query.order_id ? Number(req.query.order_id) : null } });
-  res.json({ data: result.recordset });
+  `, [req.query.order_id ? Number(req.query.order_id) : null]);
+  res.json({ data: result.rows });
 });
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    INSERT INTO dbo.WorkAssignments(order_id, worker_id, stage)
-    OUTPUT inserted.*
-    VALUES(@order_id, @worker_id, @stage);
-  `, {
-    order_id: { type: sql.Int, value: Number(req.body.order_id) },
-    worker_id: { type: sql.Int, value: Number(req.body.worker_id) },
-    stage: { type: sql.NVarChar(20), value: req.body.stage }
-  });
-  res.status(201).json({ data: result.recordset[0] });
+    INSERT INTO WorkAssignments(order_id, worker_id, stage)
+    VALUES($1, $2, $3)
+    RETURNING *;
+  `, [Number(req.body.order_id), Number(req.body.worker_id), req.body.stage]);
+  res.status(201).json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const result = await query(req, 'DELETE FROM dbo.WorkAssignments OUTPUT deleted.id WHERE id = @id;', {
-    id: { type: sql.Int, value: Number(req.params.id) }
-  });
-  if (!result.recordset[0]) throw httpError(404, 'Assignment not found');
-  res.json({ data: { id: result.recordset[0].id } });
+  const result = await query(req, 'DELETE FROM WorkAssignments WHERE id = $1 RETURNING id;', [Number(req.params.id)]);
+  if (!result.rows[0]) throw httpError(404, 'Assignment not found');
+  res.json({ data: { id: result.rows[0].id } });
 });
 
 module.exports = { rules, list, create, remove };

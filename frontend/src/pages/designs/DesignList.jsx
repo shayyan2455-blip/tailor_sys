@@ -4,6 +4,7 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import DesignFormModal from './DesignFormModal.jsx';
 import { useMasterData } from '../../context/MasterDataContext.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function DesignList() {
   const [rows, setRows] = useState([]);
@@ -13,7 +14,7 @@ export default function DesignList() {
 
   async function load() {
     const response = await designApi.list();
-    setRows(response.data);
+    setRows(response.data.data);
   }
 
   useEffect(() => { load(); }, []);
@@ -38,7 +39,7 @@ export default function DesignList() {
         <h1 className="h5 mb-0">Designs</h1>
         <button className="btn btn-sm btn-primary" type="button" onClick={() => setEditing({})}><i className="bi bi-plus-lg me-1" />Design</button>
       </div>
-      <DataTable columns={[
+      <DataTable searchable columns={[
         { key: 'name', label: 'Name' },
         { key: 'default_rate', label: 'Rate' },
         { key: 'description', label: 'Description' },

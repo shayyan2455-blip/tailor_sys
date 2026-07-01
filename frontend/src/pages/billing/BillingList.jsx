@@ -5,6 +5,7 @@ import { paymentApi } from '../../api/paymentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import PaymentModal from '../../components/billing/PaymentModal.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function BillingList() {
   const [rows, setRows] = useState([]);
@@ -12,7 +13,7 @@ export default function BillingList() {
 
   async function load() {
     const response = await orderApi.list();
-    setRows(response.data);
+    setRows(response.data.data);
   }
 
   useEffect(() => { load(); }, []);
@@ -28,7 +29,7 @@ export default function BillingList() {
         <h1 className="h5 mb-0">Billing</h1>
         <button className="btn btn-sm btn-outline-secondary icon-btn" type="button" onClick={load} title="Refresh"><i className="bi bi-arrow-clockwise" /></button>
       </div>
-      <DataTable columns={[
+      <DataTable searchable columns={[
         { key: 'id', label: 'Order' },
         { key: 'customer_name', label: 'Customer' },
         { key: 'total_amount', label: 'Total' },

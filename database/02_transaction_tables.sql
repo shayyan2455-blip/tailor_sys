@@ -75,8 +75,11 @@ GO
 
 CREATE TABLE dbo.Expenses (
     id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Expenses PRIMARY KEY,
+    supplier_name NVARCHAR(160) NULL,
     description NVARCHAR(250) NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
+    cost DECIMAL(12,2) NOT NULL,
+    paid_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_Expenses_paid_amount DEFAULT (0),
+    balance DECIMAL(12,2) NOT NULL CONSTRAINT DF_Expenses_balance DEFAULT (0),
     category NVARCHAR(80) NOT NULL,
     expense_date DATE NOT NULL CONSTRAINT DF_Expenses_expense_date DEFAULT (CONVERT(date, SYSUTCDATETIME())),
     recorded_by INT NOT NULL
@@ -90,5 +93,29 @@ CREATE TABLE dbo.WorkAssignments (
     stage NVARCHAR(20) NOT NULL,
     assigned_at DATETIME2(0) NOT NULL CONSTRAINT DF_WorkAssignments_assigned_at DEFAULT (SYSUTCDATETIME()),
     completed_at DATETIME2(0) NULL
+);
+GO
+
+CREATE TABLE dbo.WorkerEarnings (
+    id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_WorkerEarnings PRIMARY KEY,
+    worker_id INT NOT NULL,
+    order_id INT NOT NULL,
+    stage NVARCHAR(20) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    earned_at DATETIME2(0) NOT NULL CONSTRAINT DF_WorkerEarnings_earned_at DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT FK_WorkerEarnings_Workers FOREIGN KEY (worker_id) REFERENCES dbo.Workers(id),
+    CONSTRAINT FK_WorkerEarnings_Orders FOREIGN KEY (order_id) REFERENCES dbo.Orders(id)
+);
+GO
+
+CREATE TABLE dbo.WorkerPayments (
+    id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_WorkerPayments PRIMARY KEY,
+    worker_id INT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    payment_date DATE NOT NULL CONSTRAINT DF_WorkerPayments_payment_date DEFAULT (CONVERT(date, SYSUTCDATETIME())),
+    notes NVARCHAR(500) NULL,
+    recorded_by INT NOT NULL,
+    CONSTRAINT FK_WorkerPayments_Workers FOREIGN KEY (worker_id) REFERENCES dbo.Workers(id),
+    CONSTRAINT FK_WorkerPayments_Users FOREIGN KEY (recorded_by) REFERENCES dbo.Users(id)
 );
 GO

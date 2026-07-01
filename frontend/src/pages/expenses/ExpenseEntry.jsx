@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { expenseApi } from '../../api/expenseApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
-const initial = { description: '', amount: 0, category: '', expense_date: new Date().toISOString().slice(0, 10) };
+const initial = { supplier_name: '', description: '', cost: 0, paid_amount: 0, balance: 0, category: '', expense_date: new Date().toISOString().slice(0, 10) };
 
 export default function ExpenseEntry() {
   const [rows, setRows] = useState([]);
@@ -11,10 +12,11 @@ export default function ExpenseEntry() {
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   async function load() {
     const response = await expenseApi.list();
-    setRows(response.data);
+    setRows(response.data.data);
   }
 
   useEffect(() => { load(); }, []);
@@ -35,7 +37,15 @@ export default function ExpenseEntry() {
 
   function edit(row) {
     setEditing(row);
-    setForm({ description: row.description, amount: row.amount, category: row.category, expense_date: row.expense_date?.slice(0, 10) });
+    setForm({ 
+      supplier_name: row.supplier_name || '', 
+      description: row.description, 
+      cost: row.cost || 0, 
+      paid_amount: row.paid_amount || 0, 
+      balance: row.balance || 0,
+      category: row.category, 
+      expense_date: row.expense_date?.slice(0, 10) 
+    });
   }
 
   async function remove() {
@@ -49,11 +59,31 @@ export default function ExpenseEntry() {
       <div className="page-toolbar d-flex align-items-center justify-content-between mb-2">
         <h1 className="h5 mb-0">Expenses</h1>
       </div>
+      <div className="bg-white border rounded-2 p-2 mb-2">
+        <div className="input-group input-group-sm">
+          <span className="input-group-text"><i className="bi bi-search" /></span>
+          <input
+            className="form-control"
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="btn btn-outline-secondary" type="button" onClick={() => setSearch('')}>
+              <i className="bi bi-x-lg" />
+            </button>
+          )}
+        </div>
+      </div>
       <form className="bg-white border rounded-2 p-2 mb-2" onSubmit={submit}>
         {error && <div className="alert alert-danger py-2 small">{error}</div>}
         <div className="row g-2 align-items-end">
-          <div className="col-md-4"><label className="form-label small">Description</label><input className="form-control form-control-sm" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} required /></div>
-          <div className="col-md-2"><label className="form-label small">Amount</label><input className="form-control form-control-sm" type="number" min="0.01" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} required /></div>
+          <div className="col-md-3"><label className="form-label small">Supplier Name</label><input className="form-control form-control-sm" value={form.supplier_name} onChange={(event) => setForm({ ...form, supplier_name: event.target.value })} placeholder="Optional" /></div>
+          <div className="col-md-3"><label className="form-label small">Description</label><input className="form-control form-control-sm" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} required /></div>
+          <div className="col-md-2"><label className="form-label small">Cost</label><input className="form-control form-control-sm" type="number" min="0" step="0.01" value={form.cost} onChange={(event) => setForm({ ...form, cost: Number(event.target.value), balance: Number(event.target.value) - form.paid_amount })} required /></div>
+          <div className="col-md-2"><label className="form-label small">Paid Amount</label><input className="form-control form-control-sm" type="number" min="0" step="0.01" value={form.paid_amount} onChange={(event) => setForm({ ...form, paid_amount: Number(event.target.value), balance: form.cost - Number(event.target.value) })} required /></div>
+          <div className="col-md-2"><label className="form-label small">Balance</label><input className="form-control form-control-sm" type="number" min="0" step="0.01" value={form.balance} readOnly /></div>
           <div className="col-md-2"><label className="form-label small">Category</label><input className="form-control form-control-sm" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} required /></div>
           <div className="col-md-2"><label className="form-label small">Date</label><input className="form-control form-control-sm" type="date" value={form.expense_date} onChange={(event) => setForm({ ...form, expense_date: event.target.value })} required /></div>
           <div className="col-md-2 d-flex gap-1">
@@ -62,11 +92,14 @@ export default function ExpenseEntry() {
           </div>
         </div>
       </form>
-      <DataTable columns={[
-        { key: 'expense_date', label: 'Date' },
+      <DataTable searchable search={search} columns={[
+        { key: 'expense_date', label: 'Date', render: (row) => formatDate(row.expense_date) },
+        { key: 'supplier_name', label: 'Supplier' },
         { key: 'description', label: 'Description' },
         { key: 'category', label: 'Category' },
-        { key: 'amount', label: 'Amount' },
+        { key: 'cost', label: 'Cost' },
+        { key: 'paid_amount', label: 'Paid' },
+        { key: 'balance', label: 'Balance' },
         { key: 'recorded_by_name', label: 'Recorded By' }
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">

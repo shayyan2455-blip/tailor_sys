@@ -2,9 +2,8 @@ export default function ConfirmModal({ show, title, message, confirmLabel = 'Con
   if (!show) return null;
 
   return (
-    <div className="modal d-block" tabIndex="-1">
-      <div className="modal-backdrop show" />
-      <div className="modal-dialog modal-dialog-centered">
+    <div className="modal d-block show" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered" style={{ zIndex: 1050 }}>
         <div className="modal-content">
           <div className="modal-header py-2">
             <h5 className="modal-title fs-6">{title}</h5>

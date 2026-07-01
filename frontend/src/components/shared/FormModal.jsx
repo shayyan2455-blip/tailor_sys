@@ -2,9 +2,8 @@ export default function FormModal({ show, title, children, onSubmit, onClose, bu
   if (!show) return null;
 
   return (
-    <div className="modal d-block" tabIndex="-1">
-      <div className="modal-backdrop show" />
-      <div className="modal-dialog modal-lg modal-dialog-centered">
+    <div className="modal d-block show" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered" style={{ zIndex: 1050 }}>
         <form className="modal-content" onSubmit={onSubmit}>
           <div className="modal-header py-2">
             <h5 className="modal-title fs-6">{title}</h5>

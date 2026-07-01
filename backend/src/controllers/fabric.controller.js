@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -16,49 +16,47 @@ function validate(req) {
 }
 
 const list = asyncHandler(async (req, res) => {
-  const result = await query(req, 'SELECT id, name, cost_per_unit, supplier, is_active FROM dbo.Fabrics ORDER BY is_active DESC, name;');
-  res.json({ data: result.recordset });
+  const result = await query(req, 'SELECT id, name, cost_per_unit, supplier, is_active FROM Fabrics ORDER BY is_active DESC, name;');
+  res.json({ data: result.rows });
 });
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    INSERT INTO dbo.Fabrics(name, cost_per_unit, supplier, is_active)
-    OUTPUT inserted.id, inserted.name, inserted.cost_per_unit, inserted.supplier, inserted.is_active
-    VALUES (@name, @cost_per_unit, @supplier, @is_active);
+    INSERT INTO Fabrics(name, cost_per_unit, supplier, is_active)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, name, cost_per_unit, supplier, is_active;
   `, {
-    name: { type: sql.NVarChar(120), value: req.body.name },
-    cost_per_unit: { type: sql.Decimal(12, 2), value: Number(req.body.cost_per_unit || 0) },
-    supplier: { type: sql.NVarChar(160), value: req.body.supplier || null },
-    is_active: { type: sql.Bit, value: req.body.is_active !== false }
+    name: req.body.name,
+    cost_per_unit: Number(req.body.cost_per_unit || 0),
+    supplier: req.body.supplier || null,
+    is_active: req.body.is_active !== false
   });
-  res.status(201).json({ data: result.recordset[0] });
+  res.status(201).json({ data: result.rows[0] });
 });
 
 const update = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    UPDATE dbo.Fabrics
-    SET name = @name, cost_per_unit = @cost_per_unit, supplier = @supplier, is_active = @is_active
-    OUTPUT inserted.id, inserted.name, inserted.cost_per_unit, inserted.supplier, inserted.is_active
-    WHERE id = @id;
+    UPDATE Fabrics
+    SET name = $1, cost_per_unit = $2, supplier = $3, is_active = $4
+    WHERE id = $5
+    RETURNING id, name, cost_per_unit, supplier, is_active;
   `, {
-    id: { type: sql.Int, value: Number(req.params.id) },
-    name: { type: sql.NVarChar(120), value: req.body.name },
-    cost_per_unit: { type: sql.Decimal(12, 2), value: Number(req.body.cost_per_unit || 0) },
-    supplier: { type: sql.NVarChar(160), value: req.body.supplier || null },
-    is_active: { type: sql.Bit, value: req.body.is_active !== false }
+    name: req.body.name,
+    cost_per_unit: Number(req.body.cost_per_unit || 0),
+    supplier: req.body.supplier || null,
+    is_active: req.body.is_active !== false,
+    id: Number(req.params.id)
   });
-  if (!result.recordset[0]) throw httpError(404, 'Fabric not found');
-  res.json({ data: result.recordset[0] });
+  if (!result.rows[0]) throw httpError(404, 'Fabric not found');
+  res.json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const result = await query(req, 'UPDATE dbo.Fabrics SET is_active = 0 OUTPUT inserted.id WHERE id = @id;', {
-    id: { type: sql.Int, value: Number(req.params.id) }
-  });
-  if (!result.recordset[0]) throw httpError(404, 'Fabric not found');
-  res.json({ data: { id: result.recordset[0].id } });
+  const result = await query(req, 'UPDATE Fabrics SET is_active = false WHERE id = $1 RETURNING id;', { id: Number(req.params.id) });
+  if (!result.rows[0]) throw httpError(404, 'Fabric not found');
+  res.json({ data: { id: result.rows[0].id } });
 });
 
 module.exports = { rules, list, create, update, remove };

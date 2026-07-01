@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -16,49 +16,47 @@ function validate(req) {
 }
 
 const list = asyncHandler(async (_req, res) => {
-  const result = await query(_req, 'SELECT id, name, description, default_rate, is_active FROM dbo.Designs ORDER BY is_active DESC, name;');
-  res.json({ data: result.recordset });
+  const result = await query(_req, 'SELECT id, name, description, default_rate, is_active FROM Designs ORDER BY is_active DESC, name;');
+  res.json({ data: result.rows });
 });
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    INSERT INTO dbo.Designs(name, description, default_rate, is_active)
-    OUTPUT inserted.id, inserted.name, inserted.description, inserted.default_rate, inserted.is_active
-    VALUES (@name, @description, @default_rate, @is_active);
+    INSERT INTO Designs(name, description, default_rate, is_active)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, name, description, default_rate, is_active;
   `, {
-    name: { type: sql.NVarChar(120), value: req.body.name },
-    description: { type: sql.NVarChar(500), value: req.body.description || null },
-    default_rate: { type: sql.Decimal(12, 2), value: Number(req.body.default_rate || 0) },
-    is_active: { type: sql.Bit, value: req.body.is_active !== false }
+    name: req.body.name,
+    description: req.body.description || null,
+    default_rate: Number(req.body.default_rate || 0),
+    is_active: req.body.is_active !== false
   });
-  res.status(201).json({ data: result.recordset[0] });
+  res.status(201).json({ data: result.rows[0] });
 });
 
 const update = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    UPDATE dbo.Designs
-    SET name = @name, description = @description, default_rate = @default_rate, is_active = @is_active
-    OUTPUT inserted.id, inserted.name, inserted.description, inserted.default_rate, inserted.is_active
-    WHERE id = @id;
+    UPDATE Designs
+    SET name = $1, description = $2, default_rate = $3, is_active = $4
+    WHERE id = $5
+    RETURNING id, name, description, default_rate, is_active;
   `, {
-    id: { type: sql.Int, value: Number(req.params.id) },
-    name: { type: sql.NVarChar(120), value: req.body.name },
-    description: { type: sql.NVarChar(500), value: req.body.description || null },
-    default_rate: { type: sql.Decimal(12, 2), value: Number(req.body.default_rate || 0) },
-    is_active: { type: sql.Bit, value: req.body.is_active !== false }
+    name: req.body.name,
+    description: req.body.description || null,
+    default_rate: Number(req.body.default_rate || 0),
+    is_active: req.body.is_active !== false,
+    id: Number(req.params.id)
   });
-  if (!result.recordset[0]) throw httpError(404, 'Design not found');
-  res.json({ data: result.recordset[0] });
+  if (!result.rows[0]) throw httpError(404, 'Design not found');
+  res.json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const result = await query(req, 'UPDATE dbo.Designs SET is_active = 0 OUTPUT inserted.id WHERE id = @id;', {
-    id: { type: sql.Int, value: Number(req.params.id) }
-  });
-  if (!result.recordset[0]) throw httpError(404, 'Design not found');
-  res.json({ data: { id: result.recordset[0].id } });
+  const result = await query(req, 'UPDATE Designs SET is_active = false WHERE id = $1 RETURNING id;', { id: Number(req.params.id) });
+  if (!result.rows[0]) throw httpError(404, 'Design not found');
+  res.json({ data: { id: result.rows[0].id } });
 });
 
 module.exports = { rules, list, create, update, remove };

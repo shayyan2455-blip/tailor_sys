@@ -1,18 +1,12 @@
 const path = require('path');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const env = require('../config/env');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
 const backup = asyncHandler(async (req, res) => {
-  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-  const file = path.join(env.BACKUP_DIRECTORY, `${env.DB_NAME}_${stamp}.bak`);
-  await query(req, `
-    DECLARE @db sysname = DB_NAME();
-    DECLARE @sql NVARCHAR(MAX) = N'BACKUP DATABASE ' + QUOTENAME(@db) + N' TO DISK = @file WITH INIT, COMPRESSION';
-    EXEC sp_executesql @sql, N'@file NVARCHAR(4000)', @file = @backup_file;
-  `, { backup_file: { type: sql.NVarChar(4000), value: file } });
-  res.json({ data: { file } });
+  // Supabase handles automatic backups. This endpoint is disabled for PostgreSQL/Supabase.
+  throw httpError(501, 'Database backup is handled automatically by Supabase. Manual backups are not supported.');
 });
 
 const settings = asyncHandler(async (_req, res) => {

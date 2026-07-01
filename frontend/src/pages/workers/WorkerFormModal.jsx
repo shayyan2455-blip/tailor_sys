@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../components/shared/FormModal.jsx';
 
-const initial = { name: '', mobile: '', wage_rate: 0, is_active: true };
+const initial = { name: '', mobile: '', default_stage: '', is_active: true };
+
+const stages = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
 
 export default function WorkerFormModal({ show, record, onClose, onSave }) {
   const [form, setForm] = useState(initial);
@@ -9,7 +11,12 @@ export default function WorkerFormModal({ show, record, onClose, onSave }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setForm(record ? { name: record.name || '', mobile: record.mobile || '', wage_rate: record.wage_rate || 0, is_active: record.is_active !== false } : initial);
+    setForm(record ? { 
+      name: record.name || '', 
+      mobile: record.mobile || '', 
+      default_stage: record.default_stage || '',
+      is_active: record.is_active !== false 
+    } : initial);
     setError('');
   }, [record, show]);
 
@@ -41,9 +48,12 @@ export default function WorkerFormModal({ show, record, onClose, onSave }) {
           <label className="form-label small">Mobile</label>
           <input className="form-control form-control-sm" value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value })} />
         </div>
-        <div className="col-md-3">
-          <label className="form-label small">Wage Rate</label>
-          <input className="form-control form-control-sm" type="number" min="0" step="0.01" value={form.wage_rate} onChange={(event) => setForm({ ...form, wage_rate: Number(event.target.value) })} />
+        <div className="col-md-6">
+          <label className="form-label small">Default Stage (Auto-assign for new orders)</label>
+          <select className="form-select form-select-sm" value={form.default_stage} onChange={(event) => setForm({ ...form, default_stage: event.target.value })}>
+            <option value="">No default stage</option>
+            {stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}
+          </select>
         </div>
         <div className="col-12">
           <div className="form-check">

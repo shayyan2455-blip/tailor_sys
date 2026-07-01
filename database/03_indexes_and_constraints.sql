@@ -33,7 +33,8 @@ GO
 
 ALTER TABLE dbo.Expenses
     ADD CONSTRAINT FK_Expenses_Users_recorded_by FOREIGN KEY (recorded_by) REFERENCES dbo.Users(id),
-        CONSTRAINT CK_Expenses_amount CHECK (amount > 0);
+        CONSTRAINT CK_Expenses_cost CHECK (cost >= 0),
+        CONSTRAINT CK_Expenses_paid_amount CHECK (paid_amount >= 0);
 GO
 
 ALTER TABLE dbo.WorkAssignments

@@ -1,36 +1,25 @@
-const sql = require('mssql');
+const { Pool } = require('pg');
 const env = require('./env');
 
-let poolPromise;
+let pool;
 
 const config = {
-  server: env.DB_SERVER,
+  connectionString: env.DATABASE_URL,
+  host: env.DB_HOST,
   database: env.DB_NAME,
   port: env.DB_PORT,
-  options: {
-    encrypt: env.DB_ENCRYPT,
-    trustServerCertificate: !env.DB_ENCRYPT,
-    enableArithAbort: true
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
-  }
+  user: env.DB_USER,
+  password: env.DB_PASSWORD,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 };
 
-if (env.DB_USER) {
-  config.user = env.DB_USER;
-  config.password = env.DB_PASSWORD;
-} else {
-  config.options.trustedConnection = true;
-}
-
 function getPool() {
-  if (!poolPromise) {
-    poolPromise = sql.connect(config);
+  if (!pool) {
+    pool = new Pool(config);
   }
-  return poolPromise;
+  return pool;
 }
 
 function contextFromReq(req) {
@@ -43,70 +32,74 @@ function contextFromReq(req) {
 }
 
 function applyInputs(request, params = {}) {
-  for (const [name, spec] of Object.entries(params)) {
-    if (spec && typeof spec === 'object' && Object.prototype.hasOwnProperty.call(spec, 'type')) {
-      request.input(name, spec.type, spec.value);
-    } else {
-      request.input(name, spec);
-    }
+  for (const [name, value] of Object.entries(params)) {
+    request.values.push(value);
   }
   return request;
 }
 
 function withSessionBatch(text) {
   return `
-EXEC sp_set_session_context @key=N'user_id', @value=@__ctx_user_id;
-EXEC sp_set_session_context @key=N'role', @value=@__ctx_role;
-EXEC sp_set_session_context @key=N'worker_id', @value=@__ctx_worker_id;
+SET LOCAL app.current_user_id = $1;
+SET LOCAL app.current_role = $2;
+SET LOCAL app.current_worker_id = $3;
 ${text}`;
 }
 
 async function query(req, text, params = {}) {
-  const pool = await getPool();
+  const pool = getPool();
   const ctx = contextFromReq(req);
-  const request = pool.request();
-  request.input('__ctx_user_id', sql.Int, ctx.userId);
-  request.input('__ctx_role', sql.NVarChar(20), ctx.role);
-  request.input('__ctx_worker_id', sql.Int, ctx.workerId);
-  applyInputs(request, params);
-  return request.query(withSessionBatch(text));
+  const values = [ctx.userId, ctx.role, ctx.workerId];
+  
+  // Add params to values
+  for (const [name, value] of Object.entries(params)) {
+    values.push(value);
+  }
+  
+  return pool.query(text, values);
 }
 
 async function transaction(req, work) {
-  const pool = await getPool();
-  const tx = new sql.Transaction(pool);
-  await tx.begin();
+  const pool = getPool();
+  const client = await pool.connect();
+  
   try {
+    await client.query('BEGIN');
+    
+    const ctx = contextFromReq(req);
     const run = async (text, params = {}) => {
-      const ctx = contextFromReq(req);
-      const request = new sql.Request(tx);
-      request.input('__ctx_user_id', sql.Int, ctx.userId);
-      request.input('__ctx_role', sql.NVarChar(20), ctx.role);
-      request.input('__ctx_worker_id', sql.Int, ctx.workerId);
-      applyInputs(request, params);
-      return request.query(withSessionBatch(text));
+      const values = [ctx.userId, ctx.role, ctx.workerId];
+      
+      // Add params to values
+      for (const [name, value] of Object.entries(params)) {
+        values.push(value);
+      }
+      
+      return client.query(text, values);
     };
-    const result = await work(run, tx);
-    await tx.commit();
+    
+    const result = await work(run, client);
+    await client.query('COMMIT');
     return result;
   } catch (error) {
-    await tx.rollback();
+    await client.query('ROLLBACK');
     throw error;
+  } finally {
+    client.release();
   }
 }
 
 async function setSessionContext(req, context = {}) {
-  const pool = await getPool();
-  const request = pool.request();
+  const pool = getPool();
   const user = { ...contextFromReq(req), ...context };
-  request.input('__ctx_user_id', sql.Int, user.userId || null);
-  request.input('__ctx_role', sql.NVarChar(20), user.role || null);
-  request.input('__ctx_worker_id', sql.Int, user.workerId || null);
-  return request.query(withSessionBatch('SELECT 1 AS ok;'));
+  return pool.query(
+    'SET LOCAL app.current_user_id = $1, app.current_role = $2, app.current_worker_id = $3',
+    [user.userId || null, user.role || null, user.workerId || null]
+  );
 }
 
 module.exports = {
-  sql,
+  pg: require('pg'),
   getPool,
   query,
   transaction,

@@ -6,7 +6,7 @@ BEGIN
     INSERT INTO dbo.Users(username, password_hash, role, worker_id, is_active)
     VALUES (
         N'admin',
-        N'$2b$10$7EqJtq98hPqEX7fNZaFWoOqWm4HLNlmXNy1QnZ.7bN2Vdu3Q0dJQG',
+        N'$2b$10$ZXFdeMzdspkvKHl1CHI7qOxyk3vIP2kVfBlmqc.o6/HDvPmSfbMKq',
         N'Admin',
         NULL,
         1

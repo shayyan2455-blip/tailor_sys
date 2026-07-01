@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   const refreshSession = useCallback(async () => {
     try {
       const response = await authApi.session();
-      setUser(response.data.user);
+      setUser(response.data.data.user);
     } finally {
       setLoading(false);
     }
@@ -24,8 +24,8 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const response = await authApi.login(credentials);
-    setUser(response.data.user);
-    return response.data.user;
+    setUser(response.data.data.user);
+    return response.data.data.user;
   }, []);
 
   const logout = useCallback(async () => {
@@ -48,6 +48,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const value = useContext(AuthContext);
-  if (!value) throw new Error('useAuth must be used within AuthProvider');
+  if (!value) return { user: null, role: null, loading: false, login: () => {}, logout: () => {}, refreshSession: () => {}, isAuthenticated: false };
   return value;
 }

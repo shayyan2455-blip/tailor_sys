@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { sql, query } = require('../config/db');
+const { pg, query } = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -17,59 +17,49 @@ function validate(req) {
 const list = asyncHandler(async (req, res) => {
   const search = `%${req.query.search || ''}%`;
   const result = await query(req, `
-    SELECT TOP 200 id, name, mobile, address, created_at
-    FROM dbo.Customers
-    WHERE (@search = '%%' OR name LIKE @search OR mobile LIKE @search)
-    ORDER BY created_at DESC, id DESC;
-  `, { search: { type: sql.NVarChar(200), value: search } });
-  res.json({ data: result.recordset });
+    SELECT id, name, mobile, address, created_at
+    FROM Customers
+    WHERE ($1 = '%%' OR name LIKE $1 OR mobile LIKE $1)
+    ORDER BY created_at DESC, id DESC
+    LIMIT 200;
+  `, { search });
+  res.json({ data: result.rows });
 });
 
 const get = asyncHandler(async (req, res) => {
   const result = await query(req, `
-    SELECT id, name, mobile, address, created_at FROM dbo.Customers WHERE id = @id;
-  `, { id: { type: sql.Int, value: Number(req.params.id) } });
-  if (!result.recordset[0]) throw httpError(404, 'Customer not found');
-  res.json({ data: result.recordset[0] });
+    SELECT id, name, mobile, address, created_at FROM Customers WHERE id = $1;
+  `, { id: Number(req.params.id) });
+  if (!result.rows[0]) throw httpError(404, 'Customer not found');
+  res.json({ data: result.rows[0] });
 });
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    INSERT INTO dbo.Customers(name, mobile, address)
-    OUTPUT inserted.id, inserted.name, inserted.mobile, inserted.address, inserted.created_at
-    VALUES (@name, @mobile, @address);
-  `, {
-    name: { type: sql.NVarChar(160), value: req.body.name },
-    mobile: { type: sql.NVarChar(30), value: req.body.mobile },
-    address: { type: sql.NVarChar(500), value: req.body.address || null }
-  });
-  res.status(201).json({ data: result.recordset[0] });
+    INSERT INTO Customers(name, mobile, address)
+    VALUES ($1, $2, $3)
+    RETURNING id, name, mobile, address, created_at;
+  `, { name: req.body.name, mobile: req.body.mobile, address: req.body.address || null });
+  res.status(201).json({ data: result.rows[0] });
 });
 
 const update = asyncHandler(async (req, res) => {
   validate(req);
   const result = await query(req, `
-    UPDATE dbo.Customers
-    SET name = @name, mobile = @mobile, address = @address
-    OUTPUT inserted.id, inserted.name, inserted.mobile, inserted.address, inserted.created_at
-    WHERE id = @id;
-  `, {
-    id: { type: sql.Int, value: Number(req.params.id) },
-    name: { type: sql.NVarChar(160), value: req.body.name },
-    mobile: { type: sql.NVarChar(30), value: req.body.mobile },
-    address: { type: sql.NVarChar(500), value: req.body.address || null }
-  });
-  if (!result.recordset[0]) throw httpError(404, 'Customer not found');
-  res.json({ data: result.recordset[0] });
+    UPDATE Customers
+    SET name = $1, mobile = $2, address = $3
+    WHERE id = $4
+    RETURNING id, name, mobile, address, created_at;
+  `, { name: req.body.name, mobile: req.body.mobile, address: req.body.address || null, id: Number(req.params.id) });
+  if (!result.rows[0]) throw httpError(404, 'Customer not found');
+  res.json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const result = await query(req, 'DELETE FROM dbo.Customers OUTPUT deleted.id WHERE id = @id;', {
-    id: { type: sql.Int, value: Number(req.params.id) }
-  });
-  if (!result.recordset[0]) throw httpError(404, 'Customer not found');
-  res.json({ data: { id: result.recordset[0].id } });
+  const result = await query(req, 'DELETE FROM Customers WHERE id = $1 RETURNING id;', { id: Number(req.params.id) });
+  if (!result.rows[0]) throw httpError(404, 'Customer not found');
+  res.json({ data: { id: result.rows[0].id } });
 });
 
 module.exports = { rules, list, get, create, update, remove };

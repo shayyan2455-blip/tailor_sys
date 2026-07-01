@@ -3,23 +3,32 @@ import { workerApi } from '../../api/workerApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import WorkerFormModal from './WorkerFormModal.jsx';
+import CreateWorkerUserModal from './CreateWorkerUserModal.jsx';
 import { useMasterData } from '../../context/MasterDataContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function WorkerList() {
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [creatingUser, setCreatingUser] = useState(null);
   const { invalidate } = useMasterData();
+  const { user } = useAuth();
 
   async function load() {
-    const response = await workerApi.list();
-    setRows(response.data);
+    try {
+      const response = await workerApi.list();
+      setRows(response.data.data);
+    } catch (err) {
+      console.error('Error loading workers:', err);
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   async function save(payload) {
-    if (editing) await workerApi.update(editing.id, payload);
+    if (editing?.id) await workerApi.update(editing.id, payload);
     else await workerApi.create(payload);
     invalidate('workers');
     await load();
@@ -38,7 +47,7 @@ export default function WorkerList() {
         <h1 className="h5 mb-0">Workers</h1>
         <button className="btn btn-sm btn-primary" type="button" onClick={() => setEditing({})}><i className="bi bi-plus-lg me-1" />Worker</button>
       </div>
-      <DataTable columns={[
+      <DataTable searchable columns={[
         { key: 'name', label: 'Name' },
         { key: 'mobile', label: 'Mobile' },
         { key: 'wage_rate', label: 'Wage' },
@@ -46,10 +55,12 @@ export default function WorkerList() {
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">
           <button className="btn btn-outline-secondary" type="button" onClick={() => setEditing(row)} title="Edit"><i className="bi bi-pencil" /></button>
+          {user?.role === 'Admin' && <button className="btn btn-outline-primary" type="button" onClick={() => setCreatingUser(row)} title="Create User Account"><i className="bi bi-person-plus" /></button>}
           <button className="btn btn-outline-danger" type="button" onClick={() => setDeleting(row)} title="Deactivate"><i className="bi bi-person-x" /></button>
         </div>
       )} />
       <WorkerFormModal show={Boolean(editing)} record={editing?.id ? editing : null} onClose={() => setEditing(null)} onSave={save} />
+      <CreateWorkerUserModal show={Boolean(creatingUser)} worker={creatingUser} onClose={() => setCreatingUser(null)} />
       <ConfirmModal show={Boolean(deleting)} title="Deactivate Worker" message={`Deactivate ${deleting?.name || 'this worker'}?`} onClose={() => setDeleting(null)} onConfirm={remove} />
     </div>
   );
