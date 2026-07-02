@@ -15,8 +15,8 @@ async function orderReport(req, stage, status) {
     FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
     WHERE ($1 IS NULL OR o.current_stage = $1)
       AND ($2 IS NULL OR o.status = $2)
-      AND ($3 IS NULL OR o.order_date >= $3)
-      AND ($4 IS NULL OR o.order_date <= $4)
+      AND ($3::date IS NULL OR o.order_date >= $3::date)
+      AND ($4::date IS NULL OR o.order_date <= $4::date)
     ORDER BY o.delivery_date, o.id;
   `, [stage, status, req.query.from || null, req.query.to || null]);
 }
@@ -43,8 +43,8 @@ const recovery = asyncHandler(async (req, res) => {
              c.name AS customer_name, c.mobile
       FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
       WHERE o.balance > 0
-        AND ($1 IS NULL OR o.order_date >= $1)
-        AND ($2 IS NULL OR o.order_date <= $2)
+        AND ($1::date IS NULL OR o.order_date >= $1::date)
+        AND ($2::date IS NULL OR o.order_date <= $2::date)
       ORDER BY o.balance DESC, o.delivery_date;
     `, [req.query.from || null, req.query.to || null]);
     res.json({ data: result.rows });
@@ -63,12 +63,12 @@ const workerLedger = asyncHandler(async (req, res) => {
              COALESCE(SUM(we.amount), 0) - COALESCE(SUM(wp.amount), 0) AS balance
       FROM Workers w
       LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
-        AND ($1 IS NULL OR we.earned_at >= $1)
-        AND ($2 IS NULL OR we.earned_at <= $2)
+        AND ($1::date IS NULL OR we.earned_at >= $1::date)
+        AND ($2::date IS NULL OR we.earned_at <= $2::date)
       LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
-        AND ($1 IS NULL OR wp.payment_date >= $1)
-        AND ($2 IS NULL OR wp.payment_date <= $2)
-      WHERE ($3 IS NULL OR w.id = $3)
+        AND ($1::date IS NULL OR wp.payment_date >= $1::date)
+        AND ($2::date IS NULL OR wp.payment_date <= $2::date)
+      WHERE ($3::int IS NULL OR w.id = $3::int)
       GROUP BY w.id, w.name
       ORDER BY w.name;
     `, [req.query.from || null, req.query.to || null, req.query.worker_id ? Number(req.query.worker_id) : null]);
@@ -84,15 +84,15 @@ const profit = asyncHandler(async (req, res) => {
     const result = await query(req, `
       SELECT 'Income' AS label, COALESCE(SUM(amount), 0) AS amount
       FROM Payments
-      WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2)
+      WHERE ($1::date IS NULL OR payment_date >= $1::date) AND ($2::date IS NULL OR payment_date <= $2::date)
       UNION ALL
       SELECT 'Expense' AS label, COALESCE(SUM(cost), 0) AS amount
       FROM Expenses
-      WHERE ($1 IS NULL OR expense_date >= $1) AND ($2 IS NULL OR expense_date <= $2)
+      WHERE ($1::date IS NULL OR expense_date >= $1::date) AND ($2::date IS NULL OR expense_date <= $2::date)
       UNION ALL
       SELECT 'Worker Payments' AS label, COALESCE(SUM(amount), 0) AS amount
       FROM WorkerPayments
-      WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2);
+      WHERE ($1::date IS NULL OR payment_date >= $1::date) AND ($2::date IS NULL OR payment_date <= $2::date);
     `, [req.query.from || null, req.query.to || null]);
     const income = result.rows.find((row) => row.label === 'Income')?.amount || 0;
     const expense = result.rows.find((row) => row.label === 'Expense')?.amount || 0;
