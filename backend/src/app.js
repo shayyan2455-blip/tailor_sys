@@ -12,25 +12,26 @@ const logger = require('./utils/logger');
 // Redis session store (optional - falls back to memory store if not configured)
 let sessionStore;
 if (env.REDIS_HOST) {
-  const RedisStore = require('connect-redis').default;
-  const redis = require('redis');
-  const redisClient = redis.createClient({
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD || undefined,
-    db: env.REDIS_DB
-  });
-  
-  redisClient.on('error', (err) => {
-    console.error('Redis connection error:', err);
-  });
-  
-  redisClient.connect().catch((err) => {
-    console.error('Failed to connect to Redis, falling back to memory store:', err);
-  });
-  
-  sessionStore = new RedisStore({ client: redisClient });
-  logger.info('Using Redis for session storage');
+  try {
+    const RedisStore = require('connect-redis').default;
+    const redis = require('redis');
+    const redisClient = redis.createClient({
+      url: `redis://:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`
+    });
+
+    redisClient.on('error', (err) => {
+      console.error('Redis connection error:', err);
+    });
+
+    redisClient.connect().catch((err) => {
+      console.error('Failed to connect to Redis, falling back to memory store:', err);
+    });
+
+    sessionStore = RedisStore({ client: redisClient });
+    logger.info('Using Redis for session storage');
+  } catch (err) {
+    logger.warn('Redis configuration failed, using memory store:', err.message);
+  }
 } else {
   logger.warn('Redis not configured, using memory store for sessions (not recommended for production)');
 }
