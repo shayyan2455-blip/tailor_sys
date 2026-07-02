@@ -141,7 +141,7 @@ app.use(generalLimiter);
 // CSRF protection (skip for auth endpoints which have their own rate limiting)
 app.use('/api', (req, res, next) => {
   // Skip CSRF for auth endpoints, health check, and public endpoints
-  if (req.path.startsWith('/api/auth') || req.path === '/api/health') {
+  if (req.path.startsWith('/v1/auth') || req.path === '/auth' || req.path === '/health') {
     return next();
   }
   return csrfProtection(req, res, next);
