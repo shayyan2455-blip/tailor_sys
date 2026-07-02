@@ -14,7 +14,7 @@ const schema = z.object({
   SESSION_SECRET: z.string().min(16),
   COOKIE_NAME: z.string().min(1).default('tailor.sid'),
   COOKIE_SECURE: z.coerce.boolean().default(false),
-  CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(10),
