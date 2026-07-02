@@ -21,7 +21,8 @@ export default function UserManagement() {
 
   useEffect(() => { load(); }, []);
 
-  async function handleSubmit() {
+  async function handleSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
     setError('');
     setBusy(true);
     try {
