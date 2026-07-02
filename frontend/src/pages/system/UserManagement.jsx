@@ -24,6 +24,30 @@ export default function UserManagement() {
   async function handleSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
     setError('');
+    if (!form.username.trim() || !form.password.trim()) {
+      setError('Username and password are required');
+      return;
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[a-z]/.test(form.password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+    if (!/[A-Z]/.test(form.password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(form.password)) {
+      setError('Password must contain at least one number');
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(form.password)) {
+      setError('Password must contain at least one special character');
+      return;
+    }
     setBusy(true);
     try {
       await authApi.createUser(form);
