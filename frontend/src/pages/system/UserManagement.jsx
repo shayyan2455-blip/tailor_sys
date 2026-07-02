@@ -6,9 +6,10 @@ import FormModal from '../../components/shared/FormModal.jsx';
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ username: '', password: '', role: 'Manager' });
+  const [form, setForm] = useState({ username: '', password: '', confirmPassword: '', role: 'Manager' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   async function load() {
     try {
@@ -48,11 +49,16 @@ export default function UserManagement() {
       setError('Password must contain at least one special character');
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
     setBusy(true);
     try {
-      await authApi.createUser(form);
+      await authApi.createUser({ username: form.username, password: form.password, role: form.role });
       setShowModal(false);
-      setForm({ username: '', password: '', role: 'Manager' });
+      setForm({ username: '', password: '', confirmPassword: '', role: 'Manager' });
+      setShowPassword(false);
       await load();
     } catch (err) {
       console.error('Error creating user:', err);
@@ -87,7 +93,7 @@ export default function UserManagement() {
         show={showModal}
         title="Create New User"
         onSubmit={handleSubmit}
-        onClose={() => { setShowModal(false); setError(''); setForm({ username: '', password: '', role: 'Manager' }); }}
+        onClose={() => { setShowModal(false); setError(''); setForm({ username: '', password: '', confirmPassword: '', role: 'Manager' }); setShowPassword(false); }}
         busy={busy}
       >
         {error && <div className="alert alert-danger py-2 small"><strong>Error:</strong> {error}</div>}
@@ -106,15 +112,35 @@ export default function UserManagement() {
         </div>
         <div className="mb-3">
           <label className="form-label small">Password</label>
+          <div className="input-group input-group-sm">
+            <input
+              className="form-control"
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+              minLength={8}
+            />
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+            </button>
+          </div>
+          <div className="form-text small">Minimum 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol</div>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small">Confirm Password</label>
           <input
             className="form-control form-control-sm"
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            type={showPassword ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
             required
-            minLength={8}
+            placeholder="Confirm password"
           />
-          <div className="form-text small">Minimum 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol</div>
         </div>
         <div className="mb-3">
           <label className="form-label small">Role</label>

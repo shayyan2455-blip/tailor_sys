@@ -282,30 +282,35 @@ const forgotPassword = asyncHandler(async (req, res) => {
   throwIfInvalid(req);
   const { username } = req.body;
 
-  // Check if user exists
-  const user = await query(req, 'SELECT id, username FROM Users WHERE username = $1 AND is_active = true;', { username });
-  if (!user.rows[0]) {
-    // For security, still return success even if user doesn't exist
-    res.json({ data: { message: 'If the email exists, an OTP has been sent' } });
-    return;
-  }
-
-  // Generate OTP
-  const otp = generateOTP();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
-
-  // Store OTP in database
-  await query(req, `
-    INSERT INTO PasswordResetOTP(username, otp, expires_at)
-    VALUES($1, $2, $3);
-  `, { username, otp, expiresAt });
-
-  // Send OTP email
   try {
-    await sendOTP(username, otp);
-  } catch (emailError) {
-    console.error('Failed to send OTP email:', emailError);
-    throw httpError(500, 'Failed to send OTP email');
+    // Check if user exists
+    const user = await query(req, 'SELECT id, username FROM Users WHERE username = $1 AND is_active = true;', { username });
+    if (!user.rows[0]) {
+      // For security, still return success even if user doesn't exist
+      res.json({ data: { message: 'If the email exists, an OTP has been sent' } });
+      return;
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+
+    // Store OTP in database
+    await query(req, `
+      INSERT INTO PasswordResetOTP(username, otp, expires_at)
+      VALUES($1, $2, $3);
+    `, { username, otp, expiresAt });
+
+    // Send OTP email
+    try {
+      await sendOTP(username, otp);
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      throw httpError(500, 'Failed to send OTP email. Please configure email settings.');
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw error;
   }
 
   res.json({ data: { message: 'OTP has been sent to your email' } });

@@ -3,9 +3,10 @@ import FormModal from '../../components/shared/FormModal.jsx';
 import { authApi } from '../../api/authApi';
 
 export default function CreateWorkerUserModal({ show, worker, onClose }) {
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event) {
     event.preventDefault();
@@ -34,6 +35,10 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
       setError('Password must contain at least one special character');
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
     setBusy(true);
     try {
       await authApi.createWorkerUser({
@@ -41,7 +46,8 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
         username: form.username,
         password: form.password
       });
-      setForm({ username: '', password: '' });
+      setForm({ username: '', password: '', confirmPassword: '' });
+      setShowPassword(false);
       onClose();
     } catch (err) {
       const validationErrors = err?.error?.details;
@@ -60,23 +66,43 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
       <div className="row g-2">
         <div className="col-12">
           <label className="form-label small">Username</label>
-          <input 
-            className="form-control form-control-sm" 
-            value={form.username} 
-            onChange={(event) => setForm({ ...form, username: event.target.value })} 
-            required 
+          <input
+            className="form-control form-control-sm"
+            value={form.username}
+            onChange={(event) => setForm({ ...form, username: event.target.value })}
+            required
             placeholder="Enter login username"
           />
         </div>
         <div className="col-12">
           <label className="form-label small">Password</label>
-          <input 
-            className="form-control form-control-sm" 
-            type="password" 
-            value={form.password} 
-            onChange={(event) => setForm({ ...form, password: event.target.value })} 
-            required 
-            placeholder="Min 8 chars, 1 upper, 1 lower, 1 num, 1 sym"
+          <div className="input-group input-group-sm">
+            <input
+              className="form-control"
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              required
+              placeholder="Min 8 chars, 1 upper, 1 lower, 1 num, 1 sym"
+            />
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+            </button>
+          </div>
+        </div>
+        <div className="col-12">
+          <label className="form-label small">Confirm Password</label>
+          <input
+            className="form-control form-control-sm"
+            type={showPassword ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
+            required
+            placeholder="Confirm password"
           />
         </div>
       </div>
