@@ -56,6 +56,7 @@ const utilityRoutes = require('./routes/utility.routes');
 
 const app = express();
 app.locals.cookieName = env.COOKIE_NAME;
+const isVercel = Boolean(process.env.VERCEL);
 
 // Trust proxy for Vercel serverless environment (only trust specific proxies)
 app.set('trust proxy', 1);
@@ -99,7 +100,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting in serverless environments
-    return process.env.VERCEL === 'true';
+    return isVercel;
   }
 });
 
@@ -111,7 +112,7 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting in serverless environments
-    return process.env.VERCEL === 'true';
+    return isVercel;
   }
 });
 
