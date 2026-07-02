@@ -15,7 +15,7 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
       return;
     }
     if (form.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Password must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 number, 1 symbol');
       return;
     }
     setBusy(true);
@@ -28,7 +28,12 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
       setForm({ username: '', password: '' });
       onClose();
     } catch (err) {
-      setError(err.error?.message || 'Unable to create user account');
+      const validationErrors = err?.error?.details;
+      if (validationErrors && validationErrors.length > 0) {
+        setError(validationErrors.map(e => e.msg).join('. '));
+      } else {
+        setError(err?.error?.message || 'Unable to create user account');
+      }
     } finally {
       setBusy(false);
     }
@@ -55,7 +60,7 @@ export default function CreateWorkerUserModal({ show, worker, onClose }) {
             value={form.password} 
             onChange={(event) => setForm({ ...form, password: event.target.value })} 
             required 
-            placeholder="Minimum 8 characters"
+            placeholder="Min 8 chars, 1 upper, 1 lower, 1 num, 1 sym"
           />
         </div>
       </div>

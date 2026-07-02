@@ -32,12 +32,12 @@ export default function UserManagement() {
     } catch (err) {
       console.error('Error creating user:', err);
       // Extract validation errors from response
-      const validationErrors = err?.response?.data?.error?.errors;
+      const validationErrors = err?.error?.details;
       if (validationErrors && validationErrors.length > 0) {
         // Join multiple validation errors
         setError(validationErrors.map(e => e.msg).join('. '));
       } else {
-        setError(err?.response?.data?.error?.message || err?.error?.message || 'Failed to create user. Username must be a valid email address and password must be at least 8 characters.');
+        setError(err?.error?.message || 'Failed to create user.');
       }
     } finally {
       setBusy(false);
@@ -89,7 +89,7 @@ export default function UserManagement() {
             required
             minLength={8}
           />
-          <div className="form-text small">Must be at least 8 characters</div>
+          <div className="form-text small">Minimum 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol</div>
         </div>
         <div className="mb-3">
           <label className="form-label small">Role</label>
