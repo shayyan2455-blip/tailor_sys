@@ -37,56 +37,71 @@ const deliveredOrders = asyncHandler(async (req, res) => {
 });
 
 const recovery = asyncHandler(async (req, res) => {
-  const result = await query(req, `
-    SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
-           c.name AS customer_name, c.mobile
-    FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
-    WHERE o.balance > 0
-      AND ($1 IS NULL OR o.order_date >= $1)
-      AND ($2 IS NULL OR o.order_date <= $2)
-    ORDER BY o.balance DESC, o.delivery_date;
-  `, [req.query.from || null, req.query.to || null]);
-  res.json({ data: result.rows });
+  try {
+    const result = await query(req, `
+      SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
+             c.name AS customer_name, c.mobile
+      FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
+      WHERE o.balance > 0
+        AND ($1 IS NULL OR o.order_date >= $1)
+        AND ($2 IS NULL OR o.order_date <= $2)
+      ORDER BY o.balance DESC, o.delivery_date;
+    `, [req.query.from || null, req.query.to || null]);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Recovery report error:', error);
+    throw error;
+  }
 });
 
 const workerLedger = asyncHandler(async (req, res) => {
-  const result = await query(req, `
-    SELECT w.id AS worker_id, w.name AS worker_name,
-           COALESCE(SUM(we.amount), 0) AS total_earnings,
-           COALESCE(SUM(wp.amount), 0) AS total_paid,
-           COALESCE(SUM(we.amount), 0) - COALESCE(SUM(wp.amount), 0) AS balance
-    FROM Workers w
-    LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
-      AND ($1 IS NULL OR we.earned_at >= $1)
-      AND ($2 IS NULL OR we.earned_at <= $2)
-    LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
-      AND ($1 IS NULL OR wp.payment_date >= $1)
-      AND ($2 IS NULL OR wp.payment_date <= $2)
-    WHERE ($3 IS NULL OR w.id = $3)
-    GROUP BY w.id, w.name
-    ORDER BY w.name;
-  `, [req.query.from || null, req.query.to || null, req.query.worker_id ? Number(req.query.worker_id) : null]);
-  res.json({ data: result.rows });
+  try {
+    const result = await query(req, `
+      SELECT w.id AS worker_id, w.name AS worker_name,
+             COALESCE(SUM(we.amount), 0) AS total_earnings,
+             COALESCE(SUM(wp.amount), 0) AS total_paid,
+             COALESCE(SUM(we.amount), 0) - COALESCE(SUM(wp.amount), 0) AS balance
+      FROM Workers w
+      LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
+        AND ($1 IS NULL OR we.earned_at >= $1)
+        AND ($2 IS NULL OR we.earned_at <= $2)
+      LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
+        AND ($1 IS NULL OR wp.payment_date >= $1)
+        AND ($2 IS NULL OR wp.payment_date <= $2)
+      WHERE ($3 IS NULL OR w.id = $3)
+      GROUP BY w.id, w.name
+      ORDER BY w.name;
+    `, [req.query.from || null, req.query.to || null, req.query.worker_id ? Number(req.query.worker_id) : null]);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Worker ledger error:', error);
+    throw error;
+  }
 });
 
 const profit = asyncHandler(async (req, res) => {
-  const result = await query(req, `
-    SELECT 'Income' AS label, COALESCE(SUM(amount), 0) AS amount
-    FROM Payments
-    WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2)
-    UNION ALL
-    SELECT 'Expense' AS label, COALESCE(SUM(cost), 0) AS amount
-    FROM Expenses
-    WHERE ($1 IS NULL OR expense_date >= $1) AND ($2 IS NULL OR expense_date <= $2)
-    UNION ALL
-    SELECT 'Worker Payments' AS label, COALESCE(SUM(amount), 0) AS amount
-    FROM WorkerPayments
-    WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2);
-  `, [req.query.from || null, req.query.to || null]);
-  const income = result.rows.find((row) => row.label === 'Income')?.amount || 0;
-  const expense = result.rows.find((row) => row.label === 'Expense')?.amount || 0;
-  const workerPayments = result.rows.find((row) => row.label === 'Worker Payments')?.amount || 0;
-  res.json({ data: { bars: result.rows, net: Number(income) - Number(expense) - Number(workerPayments) } });
+  try {
+    const result = await query(req, `
+      SELECT 'Income' AS label, COALESCE(SUM(amount), 0) AS amount
+      FROM Payments
+      WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2)
+      UNION ALL
+      SELECT 'Expense' AS label, COALESCE(SUM(cost), 0) AS amount
+      FROM Expenses
+      WHERE ($1 IS NULL OR expense_date >= $1) AND ($2 IS NULL OR expense_date <= $2)
+      UNION ALL
+      SELECT 'Worker Payments' AS label, COALESCE(SUM(amount), 0) AS amount
+      FROM WorkerPayments
+      WHERE ($1 IS NULL OR payment_date >= $1) AND ($2 IS NULL OR payment_date <= $2);
+    `, [req.query.from || null, req.query.to || null]);
+    const income = result.rows.find((row) => row.label === 'Income')?.amount || 0;
+    const expense = result.rows.find((row) => row.label === 'Expense')?.amount || 0;
+    const workerPayments = result.rows.find((row) => row.label === 'Worker Payments')?.amount || 0;
+    res.json({ data: { bars: result.rows, net: Number(income) - Number(expense) - Number(workerPayments) } });
+  } catch (error) {
+    console.error('Profit report error:', error);
+    throw error;
+  }
 });
 
 const dashboardStats = asyncHandler(async (req, res) => {
