@@ -11,6 +11,7 @@ const logger = require('./utils/logger');
 
 // Redis session store (optional - falls back to memory store if not configured)
 let sessionStore;
+let sessionStoreName = 'memory';
 if (env.REDIS_URL || env.REDIS_HOST) {
   try {
     const { RedisStore } = require('connect-redis');
@@ -29,6 +30,7 @@ if (env.REDIS_URL || env.REDIS_HOST) {
     });
 
     sessionStore = new RedisStore({ client: redisClient });
+    sessionStoreName = 'redis';
     logger.info('Using Redis for session storage');
   } catch (err) {
     logger.warn('Redis configuration failed, using memory store:', err.message);
@@ -118,6 +120,7 @@ app.use(cookieParser());
 app.use(session({
   name: env.COOKIE_NAME,
   secret: env.SESSION_SECRET,
+  proxy: env.NODE_ENV === 'production',
   resave: false,
   saveUninitialized: false,
   rolling: true,
@@ -125,7 +128,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    sameSite: 'lax',
     maxAge: 1000 * 60 * 30, // 30 minutes
     path: '/'
   }
@@ -148,7 +151,13 @@ app.use('/api', (req, res, next) => {
   return csrfProtection(req, res, next);
 });
 
-app.get('/api/health', (_req, res) => res.json({ data: { ok: true } }));
+app.get('/api/health', (_req, res) => res.json({
+  data: {
+    ok: true,
+    sessionStore: sessionStoreName,
+    redisConfigured: Boolean(env.REDIS_URL || env.REDIS_HOST)
+  }
+}));
 
 // API v1 routes
 app.use('/api/v1/auth', authLimiter, authRoutes);
