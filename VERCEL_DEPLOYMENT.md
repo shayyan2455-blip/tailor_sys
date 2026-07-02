@@ -14,15 +14,17 @@ These values are also defined in `vercel.json`, so Vercel should pick them up au
 
 ## Environment Variables
 
-Set these in Vercel Project Settings > Environment Variables:
+Set these in Vercel Project Settings > Environment Variables.
+
+For Supabase on Vercel, use the **Transaction pooler** connection details from Supabase Dashboard > Connect, not the direct `db.[project-ref].supabase.co:5432` URL. The direct URL is commonly IPv6-only on free Supabase projects, while Vercel serverless functions should use the IPv4 Supavisor transaction pooler.
 
 ```env
-DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
-DB_HOST=[HOST]
+DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[URL_ENCODED_PASSWORD]@[POOLER_HOST]:6543/postgres
+DB_HOST=[POOLER_HOST]
 DB_NAME=postgres
-DB_USER=postgres
+DB_USER=postgres.[PROJECT_REF]
 DB_PASSWORD=[PASSWORD]
-DB_PORT=5432
+DB_PORT=6543
 DB_SSL=true
 SESSION_SECRET=[random-secret-at-least-32-characters]
 COOKIE_NAME=tailor.sid
@@ -32,6 +34,8 @@ NODE_ENV=production
 BCRYPT_SALT_ROUNDS=12
 BACKUP_DIRECTORY=/tmp/backups
 ```
+
+If your password contains special characters such as `@`, URL-encode them in `DATABASE_URL` or use the separate `DB_*` variables instead. For example, `@` becomes `%40` in a URL.
 
 For reliable login sessions on Vercel serverless functions, add Redis/Upstash too:
 
