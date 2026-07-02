@@ -4,7 +4,7 @@ export default function FormModal({ show, title, children, onSubmit, onClose, bu
   return (
     <div className="modal d-block show" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <div className="modal-dialog modal-lg modal-dialog-centered" style={{ zIndex: 1050 }}>
-        <form className="modal-content" onSubmit={onSubmit}>
+        <form className="modal-content" onSubmit={(e) => { e.preventDefault(); if (onSubmit) onSubmit(e); }}>
           <div className="modal-header py-2">
             <h5 className="modal-title fs-6">{title}</h5>
             <button type="button" className="btn-close" onClick={onClose} />
