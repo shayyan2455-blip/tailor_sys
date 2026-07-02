@@ -23,6 +23,7 @@ DB_NAME=postgres
 DB_USER=postgres
 DB_PASSWORD=[PASSWORD]
 DB_PORT=5432
+DB_SSL=true
 SESSION_SECRET=[random-secret-at-least-32-characters]
 COOKIE_NAME=tailor.sid
 COOKIE_SECURE=true

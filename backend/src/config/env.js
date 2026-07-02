@@ -11,6 +11,7 @@ const schema = z.object({
   DB_USER: z.string().optional().default(''),
   DB_PASSWORD: z.string().optional().default(''),
   DB_PORT: z.coerce.number().int().positive().default(5432),
+  DB_SSL: z.coerce.boolean().default(false),
   SESSION_SECRET: z.string().min(16),
   COOKIE_NAME: z.string().min(1).default('tailor.sid'),
   COOKIE_SECURE: z.coerce.boolean().default(false),
