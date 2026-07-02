@@ -1,3 +1,5 @@
+USE TailorERP;
+GO
 -- Add account lockout columns to Users table
 ALTER TABLE dbo.Users
 ADD failed_attempts INT DEFAULT 0,

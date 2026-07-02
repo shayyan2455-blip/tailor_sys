@@ -1,3 +1,5 @@
+USE TailorERP;
+GO
 -- Create AuditLog table for comprehensive audit logging
 CREATE TABLE dbo.AuditLog (
   id INT IDENTITY(1,1) PRIMARY KEY,
