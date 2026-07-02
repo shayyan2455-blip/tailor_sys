@@ -54,8 +54,8 @@ const utilityRoutes = require('./routes/utility.routes');
 const app = express();
 app.locals.cookieName = env.COOKIE_NAME;
 
-// Trust proxy for Vercel serverless environment
-app.set('trust proxy', true);
+// Trust proxy for Vercel serverless environment (only trust specific proxies)
+app.set('trust proxy', 1);
 
 // Security headers
 app.use(helmet({
@@ -94,6 +94,10 @@ const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting in serverless environments
+    return process.env.VERCEL === 'true';
+  }
 });
 
 const generalLimiter = rateLimit({
@@ -102,6 +106,10 @@ const generalLimiter = rateLimit({
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting in serverless environments
+    return process.env.VERCEL === 'true';
+  }
 });
 
 app.use(express.json({ limit: '1mb' }));
