@@ -54,6 +54,9 @@ const utilityRoutes = require('./routes/utility.routes');
 const app = express();
 app.locals.cookieName = env.COOKIE_NAME;
 
+// Trust proxy for Vercel serverless environment
+app.set('trust proxy', true);
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: {
