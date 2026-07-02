@@ -11,12 +11,13 @@ const logger = require('./utils/logger');
 
 // Redis session store (optional - falls back to memory store if not configured)
 let sessionStore;
-if (env.REDIS_HOST) {
+if (env.REDIS_URL || env.REDIS_HOST) {
   try {
-    const RedisStore = require('connect-redis').default;
+    const { RedisStore } = require('connect-redis');
     const redis = require('redis');
+    const redisUrl = env.REDIS_URL || `${env.REDIS_TLS ? 'rediss' : 'redis'}://:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`;
     const redisClient = redis.createClient({
-      url: `redis://:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`
+      url: redisUrl
     });
 
     redisClient.on('error', (err) => {
@@ -27,7 +28,7 @@ if (env.REDIS_HOST) {
       console.error('Failed to connect to Redis, falling back to memory store:', err);
     });
 
-    sessionStore = RedisStore({ client: redisClient });
+    sessionStore = new RedisStore({ client: redisClient });
     logger.info('Using Redis for session storage');
   } catch (err) {
     logger.warn('Redis configuration failed, using memory store:', err.message);

@@ -20,10 +20,12 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(10),
   BACKUP_DIRECTORY: z.string().min(1).default(path.join(__dirname, '../../backups')),
+  REDIS_URL: z.string().optional().default(''),
   REDIS_HOST: z.string().optional().default(''),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional().default(''),
-  REDIS_DB: z.coerce.number().int().default(0)
+  REDIS_DB: z.coerce.number().int().default(0),
+  REDIS_TLS: z.coerce.boolean().default(false)
 });
 
 const parsed = schema.safeParse(process.env);

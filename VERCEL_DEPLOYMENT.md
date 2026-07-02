@@ -40,10 +40,17 @@ If your password contains special characters such as `@`, URL-encode them in `DA
 For reliable login sessions on Vercel serverless functions, add Redis/Upstash too:
 
 ```env
+REDIS_URL=rediss://default:[PASSWORD]@[HOST]:6379
+```
+
+Alternatively, provide split Redis variables:
+
+```env
 REDIS_HOST=[host]
 REDIS_PORT=6379
 REDIS_PASSWORD=[password]
 REDIS_DB=0
+REDIS_TLS=true
 ```
 
 The frontend already uses relative API requests (`/api/v1`), so do not set `VITE_API_URL` unless you intentionally deploy the frontend and backend on separate domains.
