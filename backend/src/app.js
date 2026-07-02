@@ -57,6 +57,7 @@ const utilityRoutes = require('./routes/utility.routes');
 const app = express();
 app.locals.cookieName = env.COOKIE_NAME;
 const isVercel = Boolean(process.env.VERCEL);
+const rateLimitEnabled = env.NODE_ENV !== 'production' && !isVercel;
 
 // Trust proxy for Vercel serverless environment (only trust specific proxies)
 app.set('trust proxy', 1);
@@ -99,8 +100,8 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting in serverless environments
-    return isVercel;
+    // IP-based in-memory rate limits are unreliable behind serverless proxies.
+    return !rateLimitEnabled;
   }
 });
 
@@ -111,8 +112,8 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting in serverless environments
-    return isVercel;
+    // IP-based in-memory rate limits are unreliable behind serverless proxies.
+    return !rateLimitEnabled;
   }
 });
 
@@ -156,7 +157,8 @@ app.get('/api/health', (_req, res) => res.json({
   data: {
     ok: true,
     sessionStore: sessionStoreName,
-    redisConfigured: Boolean(env.REDIS_URL || env.REDIS_HOST)
+    redisConfigured: Boolean(env.REDIS_URL || env.REDIS_HOST),
+    rateLimitEnabled
   }
 }));
 
