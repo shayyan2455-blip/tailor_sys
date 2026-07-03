@@ -310,6 +310,7 @@ export default function Dashboard() {
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
         const deliveryOrders = deliveryResponse.data.data || [];
+        const ordersWithBalance = allOrders.filter((order) => toNumber(order.balance) > 0);
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
@@ -353,11 +354,11 @@ export default function Dashboard() {
             color: stageColors[index % stageColors.length]
           })),
           recentOrders: allOrders.slice(0, 5),
-          duePayments: duePayments.slice(0, 5),
+          duePayments: ordersWithBalance.slice(0, 5),
           activityFeed: buildActivityFeed(orders, readyOrders, payments),
           topItems: calculateTopItems(orderDetails),
           productionTotal: allProductionOrders.length,
-          totalDue: duePayments.reduce((sum, row) => sum + toNumber(row.balance), 0),
+          totalDue: ordersWithBalance.reduce((sum, row) => sum + toNumber(row.balance), 0),
           financials,
           allProductionOrders
         });
