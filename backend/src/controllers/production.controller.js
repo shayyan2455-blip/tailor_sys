@@ -172,7 +172,7 @@ const toggleStage = asyncHandler(async (req, res) => {
         UPDATE WorkAssignments
         SET completed_at = CASE WHEN $1 = true THEN NOW() ELSE NULL END
         WHERE order_id = $2 AND stage = $3
-          AND ($4 IS NULL OR worker_id = $4);
+          AND ($4::int IS NULL OR worker_id = $4::int);
       `, [completed, orderId, stage, req.session.user.role === 'Worker' ? req.session.user.workerId : null]);
 
       // Create worker earnings when stage is completed
