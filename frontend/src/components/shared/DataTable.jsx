@@ -65,7 +65,9 @@ export default function DataTable({ columns, rows, keyField = 'id', pageSize = 1
           </div>
         </div>
       )}
-      <div className="table-responsive">
+      
+      {/* Table view for desktop */}
+      <div className="table-responsive d-none d-md-block">
         <table className="table table-sm table-hover align-middle mb-0">
           <thead className="table-light">
             <tr>
@@ -101,6 +103,33 @@ export default function DataTable({ columns, rows, keyField = 'id', pageSize = 1
           </tbody>
         </table>
       </div>
+
+      {/* Card view for mobile */}
+      <div className="d-md-none">
+        {visibleRows.map((row, index) => (
+          <div key={row[keyField] ?? `${page}-${index}`} className={`border-bottom p-3 ${rowClassName ? rowClassName(row) : ''}`}>
+            <div className="row g-2">
+              {columns.map((column) => (
+                <div key={column.key} className="col-12">
+                  <div className="small text-muted mb-1">{column.label}</div>
+                  <div className="fw-medium">{column.render ? column.render(row) : row[column.key]}</div>
+                </div>
+              ))}
+              {actions && (
+                <div className="col-12 mt-2">
+                  <div className="d-flex gap-2 justify-content-end">
+                    {actions(row)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {visibleRows.length === 0 && (
+          <div className="text-center text-muted py-4">{search ? 'No matching records found' : emptyText}</div>
+        )}
+      </div>
+
       <div className="d-flex align-items-center justify-content-between px-2 py-1 border-top small">
         <span>{sortedRows.length} rows{search && ` (filtered from ${rows?.length || 0} total)`}</span>
         <div className="btn-group btn-group-sm">
