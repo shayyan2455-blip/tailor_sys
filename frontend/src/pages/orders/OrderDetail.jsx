@@ -5,6 +5,21 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
+const measurementLabels = {
+  neck: 'Neck',
+  chest: 'Chest',
+  waist: 'Waist',
+  hip: 'Hip',
+  shoulder: 'Shoulder',
+  sleeve: 'Sleeve',
+  length: 'Length',
+  collar: 'Collar',
+  shalwar_len: 'Shalwar Length',
+  pancha: 'Pancha'
+};
+
+const measurementFields = Object.keys(measurementLabels);
+
 export default function OrderDetail() {
   const { id } = useParams();
   const [detail, setDetail] = useState(null);
@@ -33,13 +48,31 @@ export default function OrderDetail() {
         </button>
       </div>
       <div className="bg-white border rounded-2 p-2 mb-2">
-        <div className="row g-2 small">
-          <div className="col-md-3"><strong>Customer:</strong> {order.customer_name}</div>
-          <div className="col-md-3"><strong>Mobile:</strong> {order.mobile}</div>
-          <div className="col-md-6"><strong>Address:</strong> {order.address || '-'}</div>
-          <div className="col-md-2"><strong>Total:</strong> {Number(order.total_amount).toLocaleString()}</div>
-          <div className="col-md-2"><strong>Advance:</strong> {Number(order.advance).toLocaleString()}</div>
-          <div className="col-md-2"><strong>Balance:</strong> {Number(order.balance).toLocaleString()}</div>
+        <div className="order-summary-grid small">
+          <div className="order-summary-field">
+            <strong>Customer:</strong>
+            <span>{order.customer_name}</span>
+          </div>
+          <div className="order-summary-field">
+            <strong>Mobile:</strong>
+            <span>{order.mobile}</span>
+          </div>
+          <div className="order-summary-field">
+            <strong>Address:</strong>
+            <span>{order.address || '-'}</span>
+          </div>
+          <div className="order-summary-field">
+            <strong>Total:</strong>
+            <span>{Number(order.total_amount).toLocaleString()}</span>
+          </div>
+          <div className="order-summary-field">
+            <strong>Advance:</strong>
+            <span>{Number(order.advance).toLocaleString()}</span>
+          </div>
+          <div className="order-summary-field">
+            <strong>Balance:</strong>
+            <span>{Number(order.balance).toLocaleString()}</span>
+          </div>
         </div>
       </div>
       <DataTable columns={[
@@ -53,7 +86,16 @@ export default function OrderDetail() {
         <div className="col-lg-6">
           <div className="bg-white border rounded-2 p-2 small">
             <h2 className="h6">Measurements</h2>
-            {measurements ? Object.entries(measurements).filter(([key]) => !['id', 'order_id'].includes(key)).map(([key, value]) => <span className="me-3" key={key}><strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong> {value ?? '-'}</span>) : 'No measurements'}
+            {measurements ? (
+              <div className="measurement-detail-list">
+                {measurementFields.map((field) => (
+                  <div className="measurement-detail-row" key={field}>
+                    <strong>{measurementLabels[field]}:</strong>
+                    <span>{measurements[field] ?? '-'}</span>
+                  </div>
+                ))}
+              </div>
+            ) : 'No measurements'}
           </div>
         </div>
         <div className="col-lg-6">
