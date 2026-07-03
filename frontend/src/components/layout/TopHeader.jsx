@@ -83,11 +83,6 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
           </button>
         </form>
 
-        <button className="btn erp-notification-button icon-btn" type="button" title="Notifications" aria-label="Notifications">
-          <i className="bi bi-bell" />
-          <span className="erp-notification-badge">5</span>
-        </button>
-
         {user && (
           <div className="dropdown">
             <button
