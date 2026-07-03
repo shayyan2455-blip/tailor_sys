@@ -179,7 +179,7 @@ export default function ProductionHub() {
             className="btn btn-sm btn-danger" 
             onClick={() => moveToStage(workerPrompt?.order, workerPrompt?.stage)}
           >
-            Move Without Worker
+            Move Without Default Worker
           </button>
         </div>
       </FormModal>
