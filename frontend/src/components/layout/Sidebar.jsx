@@ -21,7 +21,8 @@ const navItems = [
   { to: '/reports/worker-ledger', label: 'Worker Ledger', icon: 'bi-clipboard-data', roles: ['Admin', 'Manager'], end: true },
   { to: '/reports/profit', label: 'Profit', icon: 'bi-bar-chart', roles: ['Admin'], end: true },
   { to: '/system/users', label: 'User Management', icon: 'bi-person-gear', roles: ['Admin'], end: true },
-  { to: '/utility/backup', label: 'Backup', icon: 'bi-database-down', roles: ['Admin'], end: true },
+  // Backup functionality disabled - can be re-enabled in future
+  // { to: '/utility/backup', label: 'Backup', icon: 'bi-database-down', roles: ['Admin'], end: true },
   { to: '/utility/change-password', label: 'Password', icon: 'bi-key', roles: ['Admin', 'Manager', 'Worker'], end: true },
   { to: '/system/config', label: 'System Config', icon: 'bi-sliders', roles: ['Admin'], end: true }
 ];

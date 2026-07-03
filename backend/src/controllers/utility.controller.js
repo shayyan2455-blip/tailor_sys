@@ -5,14 +5,17 @@ const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 const { createBackup } = require('../utils/backup');
 
+// Backup functionality disabled for now - can be re-enabled in future
 const backup = asyncHandler(async (req, res) => {
-  try {
-    const backupFile = await createBackup();
-    res.json({ data: { file: backupFile } });
-  } catch (error) {
-    console.error('Backup error:', error);
-    throw httpError(500, `Backup failed: ${error.message}`);
-  }
+  throw httpError(503, 'Backup functionality is currently disabled. It can be re-enabled in the future when needed.');
+  // Original backup code (commented out):
+  // try {
+  //   const backupFile = await createBackup();
+  //   res.json({ data: { file: backupFile } });
+  // } catch (error) {
+  //   console.error('Backup error:', error);
+  //   throw httpError(500, `Backup failed: ${error.message}`);
+  // }
 });
 
 const settings = asyncHandler(async (_req, res) => {
