@@ -4,12 +4,14 @@ import { orderApi } from '../../api/orderApi';
 import { paymentApi } from '../../api/paymentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import PaymentModal from '../../components/billing/PaymentModal.jsx';
+import OrderTrackingModal from '../../components/billing/OrderTrackingModal.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 export default function BillingList() {
   const [rows, setRows] = useState([]);
   const [paying, setPaying] = useState(null);
+  const [tracking, setTracking] = useState(null);
 
   async function load() {
     const response = await orderApi.list();
@@ -39,10 +41,12 @@ export default function BillingList() {
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">
           <Link className="btn btn-outline-secondary" to={`/orders/${row.id}`} title="View"><i className="bi bi-eye" /></Link>
+          <button className="btn btn-outline-info" type="button" onClick={() => setTracking(row)} title="Track"><i className="bi bi-geo-alt" /></button>
           <button className="btn btn-outline-primary" type="button" onClick={() => setPaying(row)} title="Payment"><i className="bi bi-cash" /></button>
         </div>
       )} />
       <PaymentModal show={Boolean(paying)} order={paying} onClose={() => setPaying(null)} onSave={savePayment} />
+      <OrderTrackingModal show={Boolean(tracking)} order={tracking} onClose={() => setTracking(null)} />
     </div>
   );
 }

@@ -218,4 +218,69 @@ const toggleStage = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
-module.exports = { toggleRules, activeList, toggleStage };
+const orderTracking = asyncHandler(async (req, res) => {
+  const orderId = Number(req.params.id);
+  
+  // Get order details
+  const order = await query(req, 'SELECT id, current_stage, status FROM Orders WHERE id = $1;', [orderId]);
+  if (!order.rows[0]) throw httpError(404, 'Order not found');
+  
+  // Get stage completions with timestamps
+  const stagesResult = await query(req, `
+    SELECT 
+      stage_booked, stage_booked_at,
+      stage_cutting, stage_cutting_at,
+      stage_stitching, stage_stitching_at,
+      stage_trial, stage_trial_at,
+      stage_alteration, stage_alteration_at,
+      stage_pressing, stage_pressing_at,
+      stage_ready, stage_ready_at,
+      stage_delivered, stage_delivered_at
+    FROM OrderItems
+    WHERE order_id = $1
+    LIMIT 1;
+  `, [orderId]);
+  
+  // Get worker earnings for each stage
+  const earningsResult = await query(req, `
+    SELECT we.stage, we.amount, w.name AS worker_name
+    FROM WorkerEarnings we
+    INNER JOIN Workers w ON w.id = we.worker_id
+    WHERE we.order_id = $1;
+  `, [orderId]);
+  
+  const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
+  const stageColumns = ['stage_booked', 'stage_cutting', 'stage_stitching', 'stage_trial', 'stage_alteration', 'stage_pressing', 'stage_ready', 'stage_delivered'];
+  const atColumns = ['stage_booked_at', 'stage_cutting_at', 'stage_stitching_at', 'stage_trial_at', 'stage_alteration_at', 'stage_pressing_at', 'stage_ready_at', 'stage_delivered_at'];
+  
+  const stageData = stagesResult.rows[0] || {};
+  const earningsMap = {};
+  earningsResult.rows.forEach(row => {
+    earningsMap[row.stage] = row;
+  });
+  
+  const tracking = stageOrder.map((stage, index) => {
+    const isCompleted = stageData[stageColumns[index]];
+    const completedAt = stageData[atColumns[index]];
+    const earning = earningsMap[stage];
+    
+    return {
+      stage,
+      completed: isCompleted,
+      completed_at: completedAt,
+      worker_name: earning?.worker_name || null,
+      amount: earning?.amount || null
+    };
+  });
+  
+  res.json({ 
+    data: {
+      order_id: order.rows[0].id,
+      current_stage: order.rows[0].current_stage,
+      status: order.rows[0].status,
+      tracking
+    }
+  });
+});
+
+module.exports = { toggleRules, activeList, toggleStage, orderTracking };
