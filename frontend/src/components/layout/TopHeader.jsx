@@ -1,5 +1,7 @@
-import { useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { navItems } from './Sidebar.jsx';
 
 const routeDetails = [
   { path: '/', title: 'Dashboard', subtitle: 'Overview of your business' },
@@ -40,10 +42,79 @@ function getRouteDetails(pathname) {
 export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobileMenuToggle }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const page = getRouteDetails(location.pathname);
+
+  const searchableItems = useMemo(() => {
+    const role = user?.role;
+    return navItems
+      .filter((item) => item.roles.includes(role))
+      .map((item) => {
+        const details = getRouteDetails(item.to);
+        return {
+          ...item,
+          title: details.title,
+          subtitle: details.subtitle,
+          searchText: `${item.label} ${details.title} ${details.subtitle} ${item.to}`.toLowerCase()
+        };
+      });
+  }, [user?.role]);
+
+  const searchResults = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const results = query
+      ? searchableItems.filter((item) => item.searchText.includes(query))
+      : searchableItems;
+
+    return results.slice(0, 8);
+  }, [search, searchableItems]);
+
+  const goToSearchResult = (item) => {
+    if (!item) return;
+    navigate(item.to);
+    setSearch('');
+    setSearchOpen(false);
+    setActiveSearchIndex(0);
+  };
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
+    goToSearchResult(searchResults[activeSearchIndex] || searchResults[0]);
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (!searchResults.length && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+      return;
+    }
+
+    if (!searchOpen && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+      setSearchOpen(true);
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSearchIndex((index) => Math.min(index + 1, searchResults.length - 1));
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSearchIndex((index) => Math.max(index - 1, 0));
+    }
+
+    if (event.key === 'Escape') {
+      setSearchOpen(false);
+      setActiveSearchIndex(0);
+    }
+  };
+
+  const handleSearchBlur = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setSearchOpen(false);
+      setActiveSearchIndex(0);
+    }
   };
 
   return (
@@ -76,11 +147,62 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
       </div>
 
       <div className="erp-header-actions ms-auto d-flex align-items-center">
-        <form className="erp-header-search d-none d-lg-flex" role="search" onSubmit={handleSearchSubmit}>
-          <input className="form-control" type="search" placeholder="Search..." aria-label="Search" />
+        <form
+          className="erp-header-search d-none d-lg-flex"
+          role="search"
+          onSubmit={handleSearchSubmit}
+          onBlur={handleSearchBlur}
+        >
+          <input
+            className="form-control"
+            type="search"
+            placeholder="Search..."
+            aria-label="Search pages"
+            aria-controls="header-search-results"
+            aria-expanded={searchOpen && searchResults.length > 0}
+            aria-activedescendant={searchOpen && searchResults[activeSearchIndex] ? `header-search-result-${activeSearchIndex}` : undefined}
+            autoComplete="off"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setSearchOpen(true);
+              setActiveSearchIndex(0);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            onKeyDown={handleSearchKeyDown}
+          />
           <button className="btn icon-btn" type="submit" title="Search" aria-label="Search">
             <i className="bi bi-search" />
           </button>
+
+          {searchOpen && (
+            <div className="erp-search-results shadow-sm" id="header-search-results" role="listbox">
+              {searchResults.length > 0 ? (
+                searchResults.map((item, index) => (
+                  <button
+                    className={`erp-search-result ${index === activeSearchIndex ? 'active' : ''}`}
+                    id={`header-search-result-${index}`}
+                    key={item.to}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeSearchIndex}
+                    onMouseEnter={() => setActiveSearchIndex(index)}
+                    onClick={() => goToSearchResult(item)}
+                  >
+                    <span className="erp-search-result-icon">
+                      <i className={`bi ${item.icon}`} />
+                    </span>
+                    <span className="erp-search-result-copy">
+                      <span className="erp-search-result-title">{item.title}</span>
+                      <span className="erp-search-result-subtitle">{item.subtitle}</span>
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="erp-search-empty">No pages found</div>
+              )}
+            </div>
+          )}
         </form>
 
         {user && (

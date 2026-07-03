@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
-const navItems = [
+export const navItems = [
   { to: '/', label: 'Dashboard', icon: 'bi-speedometer2', roles: ['Admin', 'Manager'], end: true },
   { to: '/orders/new', label: 'Order Booking', icon: 'bi-journal-plus', roles: ['Admin', 'Manager'], end: true },
   { to: '/orders', label: 'Orders', icon: 'bi-receipt', roles: ['Admin', 'Manager'], end: true },
