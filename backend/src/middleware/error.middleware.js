@@ -6,6 +6,15 @@ function notFound(_req, _res, next) {
 
 function errorHandler(err, _req, res, _next) {
   const status = err.status || err.statusCode || 500;
+  
+  // Log the error for debugging
+  console.error('Error details:', {
+    status,
+    message: err.message,
+    stack: err.stack,
+    details: err.details
+  });
+
   const payload = {
     error: {
       message: status >= 500 ? 'Internal server error' : err.message,
