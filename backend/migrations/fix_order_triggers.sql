@@ -1,6 +1,11 @@
 -- Fix ambiguous column references in order calculation functions
 
-CREATE OR REPLACE FUNCTION RecalculateOrderSummary(p_order_id INT)
+-- Drop existing functions first
+DROP FUNCTION IF EXISTS RecalculateOrderSummary(integer);
+DROP FUNCTION IF EXISTS RecalculateOrderStage(integer);
+
+-- Recreate functions with renamed parameters
+CREATE FUNCTION RecalculateOrderSummary(p_order_id INT)
 RETURNS VOID AS $$
 BEGIN
     UPDATE Orders
@@ -12,7 +17,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION RecalculateOrderStage(p_order_id INT)
+CREATE FUNCTION RecalculateOrderStage(p_order_id INT)
 RETURNS VOID AS $$
 DECLARE
     stage VARCHAR(20) := 'Booked';
