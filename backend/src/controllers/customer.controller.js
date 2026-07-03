@@ -19,7 +19,7 @@ const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
     SELECT id, name, mobile, address, created_at
     FROM Customers
-    WHERE ($1 = '%%' OR name LIKE $1 OR mobile LIKE $1)
+    WHERE ($1 = '%%' OR LOWER(name) LIKE LOWER($1) OR mobile LIKE $1)
     ORDER BY created_at DESC, id DESC
     LIMIT 200;
   `, { search });

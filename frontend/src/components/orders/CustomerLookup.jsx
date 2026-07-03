@@ -7,6 +7,7 @@ export default function CustomerLookup({ value, onChange }) {
   const [showResults, setShowResults] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
 
@@ -19,9 +20,10 @@ export default function CustomerLookup({ value, onChange }) {
       }
       setLoading(true);
       try {
-        const response = await customerApi.list({ search });
+        const response = await customerApi.list({ search: search.toLowerCase() });
         setResults(response.data.data);
         setShowResults(true);
+        setHighlightedIndex(-1);
       } catch (err) {
         console.error('Error searching customers:', err);
         setResults([]);
@@ -55,6 +57,7 @@ export default function CustomerLookup({ value, onChange }) {
     setSelectedCustomer(customer);
     setSearch(customer.name);
     setShowResults(false);
+    setHighlightedIndex(-1);
     onChange(customer.id);
   }
 
@@ -62,12 +65,39 @@ export default function CustomerLookup({ value, onChange }) {
     setSelectedCustomer(null);
     setSearch('');
     setShowResults(false);
+    setHighlightedIndex(-1);
     onChange('');
   }
 
   function handleClickOutside(event) {
     if (resultsRef.current && !resultsRef.current.contains(event.target) && inputRef.current && !inputRef.current.contains(event.target)) {
       setShowResults(false);
+      setHighlightedIndex(-1);
+    }
+  }
+
+  function handleKeyDown(event) {
+    if (!showResults || results.length === 0) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+          handleSelect(results[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowResults(false);
+        setHighlightedIndex(-1);
+        break;
     }
   }
 
@@ -86,6 +116,7 @@ export default function CustomerLookup({ value, onChange }) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Search by name or mobile..."
           onFocus={() => search.length >= 2 && setShowResults(true)}
         />
@@ -98,13 +129,16 @@ export default function CustomerLookup({ value, onChange }) {
       {loading && <div className="form-text small">Searching...</div>}
       {showResults && results.length > 0 && (
         <div ref={resultsRef} className="position-absolute w-100 bg-white border rounded-2 mt-1 shadow" style={{ zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}>
-          {results.map((customer) => (
+          {results.map((customer, index) => (
             <div
               key={customer.id}
               className="p-2 cursor-pointer hover-bg-light"
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
+              style={{
+                cursor: 'pointer',
+                backgroundColor: index === highlightedIndex ? '#f8f9fa' : ''
+              }}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onMouseLeave={() => setHighlightedIndex(-1)}
               onClick={() => handleSelect(customer)}
             >
               <div className="fw-bold small">{customer.name}</div>
