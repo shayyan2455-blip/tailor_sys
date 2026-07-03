@@ -352,7 +352,7 @@ export default function Dashboard() {
             value,
             color: stageColors[index % stageColors.length]
           })),
-          recentOrders: orders.slice(0, 5),
+          recentOrders: allOrders.slice(0, 5),
           duePayments: duePayments.slice(0, 5),
           activityFeed: buildActivityFeed(orders, readyOrders, payments),
           topItems: calculateTopItems(orderDetails),
