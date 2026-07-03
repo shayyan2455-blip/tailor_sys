@@ -26,7 +26,7 @@ export default function BillingList() {
   return (
     <div>
       <div className="page-toolbar d-flex align-items-center justify-content-between mb-2">
-        <h1 className="h5 mb-0">Billing</h1>
+        <h1 className="h5 mb-0">Orders</h1>
         <button className="btn btn-sm btn-outline-secondary icon-btn" type="button" onClick={load} title="Refresh"><i className="bi bi-arrow-clockwise" /></button>
       </div>
       <DataTable searchable columns={[
