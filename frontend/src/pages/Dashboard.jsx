@@ -36,7 +36,8 @@ const emptyDashboard = {
     productionOrders: 0,
     readyOrders: 0,
     revenue: 0,
-    allOrdersCount: 0
+    allOrdersCount: 0,
+    allReadyOrdersCount: 0
   },
   trends: {
     totalOrders: 0,
@@ -280,7 +281,8 @@ export default function Dashboard() {
           paymentsResponse,
           allOrdersResponse,
           previousAllOrdersResponse,
-          productionResponse
+          productionResponse,
+          allReadyResponse
         ] = await Promise.all([
           orderApi.list(params),
           orderApi.list(previousParams),
@@ -291,7 +293,8 @@ export default function Dashboard() {
           paymentApi.list(),
           orderApi.list(),
           orderApi.list(previousParams),
-          productionApi.active()
+          productionApi.active(),
+          reportApi.readyOrders()
         ]);
 
         if (!alive) return;
@@ -306,6 +309,7 @@ export default function Dashboard() {
         const allOrders = allOrdersResponse.data.data || [];
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
+        const allReadyOrders = allReadyResponse.data.data || [];
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
@@ -332,7 +336,8 @@ export default function Dashboard() {
             productionOrders: activeProduction.length,
             readyOrders: readyOrders.length,
             revenue,
-            allOrdersCount: allOrders.length
+            allOrdersCount: allOrders.length,
+            allReadyOrdersCount: allReadyOrders.length
           },
           trends: {
             totalOrders: percentChange(allOrders.length, previousAllOrders.length),
@@ -389,7 +394,7 @@ export default function Dashboard() {
       <div className="dashboard-stat-grid">
         <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.allOrdersCount} trend={dashboard.trends.totalOrders} color="blue" />
         <StatCard icon="bi-clipboard-data" label="In Production" value={dashboard.stats.productionOrders} trend={dashboard.trends.productionOrders} color="green" />
-        <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.readyOrders} trend={dashboard.trends.readyOrders} color="orange" />
+        <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.allReadyOrdersCount} color="orange" />
         <StatCard icon="bi-currency-exchange" label="Total Revenue" value={money(dashboard.stats.revenue)} trend={dashboard.trends.revenue} color="purple" />
       </div>
 
