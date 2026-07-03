@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../../api/orderApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
+import InvoiceSlip from '../../components/invoice/InvoiceSlip.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 const measurementLabels = {
@@ -47,57 +48,8 @@ export default function OrderDetail() {
           <i className="bi bi-printer me-1" /> Print Receipt
         </button>
       </div>
-      <div className="bg-white border rounded-2 p-2 mb-2">
-        <div className="order-summary-grid small">
-          <div className="order-summary-field">
-            <strong>Customer:</strong>
-            <span>{order.customer_name}</span>
-          </div>
-          <div className="order-summary-field">
-            <strong>Mobile:</strong>
-            <span>{order.mobile}</span>
-          </div>
-          <div className="order-summary-field">
-            <strong>Address:</strong>
-            <span>{order.address || '-'}</span>
-          </div>
-          <div className="order-summary-field">
-            <strong>Total:</strong>
-            <span>{Number(order.total_amount).toLocaleString()}</span>
-          </div>
-          <div className="order-summary-field">
-            <strong>Advance:</strong>
-            <span>{Number(order.advance).toLocaleString()}</span>
-          </div>
-          <div className="order-summary-field">
-            <strong>Balance:</strong>
-            <span>{Number(order.balance).toLocaleString()}</span>
-          </div>
-        </div>
-      </div>
-      <DataTable columns={[
-        { key: 'garment_type', label: 'Garment' },
-        { key: 'qty', label: 'Qty' },
-        { key: 'rate', label: 'Rate' },
-        { key: 'fabric_name', label: 'Fabric' },
-        { key: 'amount', label: 'Amount' }
-      ]} rows={items} />
-      <div className="row g-2 mt-1">
-        <div className="col-lg-6">
-          <div className="bg-white border rounded-2 p-2 small">
-            <h2 className="h6">Measurements</h2>
-            {measurements ? (
-              <div className="measurement-detail-list">
-                {measurementFields.map((field) => (
-                  <div className="measurement-detail-row" key={field}>
-                    <strong>{measurementLabels[field]}:</strong>
-                    <span>{measurements[field] ?? '-'}</span>
-                  </div>
-                ))}
-              </div>
-            ) : 'No measurements'}
-          </div>
-        </div>
+      <InvoiceSlip order={order} items={items} payments={payments} measurements={measurements} />
+      <div className="row g-2 mt-2">
         <div className="col-lg-6">
           <DataTable columns={[
             { key: 'payment_date', label: 'Date', render: (row) => formatDate(row.payment_date) },
