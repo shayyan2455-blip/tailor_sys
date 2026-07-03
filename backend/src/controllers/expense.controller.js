@@ -21,8 +21,8 @@ const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
     SELECT e.*, u.username AS recorded_by_name
     FROM Expenses e INNER JOIN Users u ON u.id = e.recorded_by
-    WHERE ($1 IS NULL OR e.expense_date >= $1)
-      AND ($2 IS NULL OR e.expense_date <= $2)
+    WHERE ($1::date IS NULL OR e.expense_date >= $1::date)
+      AND ($2::date IS NULL OR e.expense_date <= $2::date)
     ORDER BY e.expense_date DESC, e.id DESC;
   `, [req.query.from || null, req.query.to || null]);
   res.json({ data: result.rows });
