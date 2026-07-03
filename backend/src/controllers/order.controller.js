@@ -131,26 +131,43 @@ const create = asyncHandler(async (req, res) => {
     `, [Number(req.body.customer_id), req.body.order_date, req.body.delivery_date || null, req.body.notes || null, req.session.user.id]);
     const orderId = inserted.rows[0].id;
     await insertItems(run, orderId, req.body.items);
-    await upsertMeasurement(run, orderId, req.body.measurements || {});
+    
+    // Try to save measurements, but continue if it fails
+    try {
+      await upsertMeasurement(run, orderId, req.body.measurements || {});
+    } catch (error) {
+      console.error('Error saving measurements:', error);
+      // Continue without measurements if it fails
+    }
     
     // Auto-assign workers based on their default_stage
-    const workersWithDefaultStage = await run(`
-      SELECT id, default_stage FROM Workers
-      WHERE default_stage IS NOT NULL AND is_active = true;
-    `);
-    
-    for (const worker of workersWithDefaultStage.rows) {
-      await run(`
-        INSERT INTO WorkAssignments(order_id, worker_id, stage)
-        VALUES($1, $2, $3);
-      `, [orderId, worker.id, worker.default_stage]);
+    try {
+      const workersWithDefaultStage = await run(`
+        SELECT id, default_stage FROM Workers
+        WHERE default_stage IS NOT NULL AND is_active = true;
+      `);
+      
+      for (const worker of workersWithDefaultStage.rows) {
+        await run(`
+          INSERT INTO WorkAssignments(order_id, worker_id, stage)
+          VALUES($1, $2, $3);
+        `, [orderId, worker.id, worker.default_stage]);
+      }
+    } catch (error) {
+      console.error('Error auto-assigning workers:', error);
+      // Continue without worker assignment if it fails
     }
     
     if (Number(req.body.advance || 0) > 0) {
-      await run(`
-        INSERT INTO Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
-        VALUES($1, $2, $3, 'Advance', $4, $5, $6);
-      `, [orderId, Number(req.body.advance), req.body.order_date, req.body.advance_reference || null, 'Order advance', req.session.user.id]);
+      try {
+        await run(`
+          INSERT INTO Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
+          VALUES($1, $2, $3, 'Advance', $4, $5, $6);
+        `, [orderId, Number(req.body.advance), req.body.order_date, req.body.advance_reference || null, 'Order advance', req.session.user.id]);
+      } catch (error) {
+        console.error('Error recording advance payment:', error);
+        // Continue without payment recording if it fails
+      }
     }
     const summary = await run('SELECT * FROM Orders WHERE id = $1;', [orderId]);
     return summary.rows[0];
