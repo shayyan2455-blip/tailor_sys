@@ -21,7 +21,7 @@ const list = asyncHandler(async (req, res) => {
   const result = await query(req, `
     SELECT p.*, u.username AS recorded_by_name
     FROM Payments p INNER JOIN Users u ON u.id = p.recorded_by
-    WHERE ($1 IS NULL OR p.order_id = $1)
+    WHERE ($1::int IS NULL OR p.order_id = $1::int)
     ORDER BY p.payment_date DESC, p.id DESC;
   `, [req.query.order_id ? Number(req.query.order_id) : null]);
   res.json({ data: result.rows });
