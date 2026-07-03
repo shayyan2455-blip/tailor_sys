@@ -307,8 +307,8 @@ export default function Dashboard() {
         const allOrders = allOrdersResponse.data.data || [];
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
-        const allReadyOrders = allOrders.filter((order) => order.current_stage === 'Ready' && order.status !== 'Delivered');
-        const previousAllReadyOrders = previousAllOrders.filter((order) => order.current_stage === 'Ready' && order.status !== 'Delivered');
+        const allReadyOrders = allOrders.filter((order) => order.current_stage === 'Ready' || (order.status === 'Delivered' && !order.delivery_date));
+        const previousAllReadyOrders = previousAllOrders.filter((order) => order.current_stage === 'Ready' || (order.status === 'Delivered' && !order.delivery_date));
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
