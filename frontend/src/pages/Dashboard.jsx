@@ -281,8 +281,7 @@ export default function Dashboard() {
           paymentsResponse,
           allOrdersResponse,
           previousAllOrdersResponse,
-          productionResponse,
-          allReadyResponse
+          productionResponse
         ] = await Promise.all([
           orderApi.list(params),
           orderApi.list(previousParams),
@@ -293,8 +292,7 @@ export default function Dashboard() {
           paymentApi.list(),
           orderApi.list(),
           orderApi.list(previousParams),
-          productionApi.active(),
-          reportApi.readyOrders()
+          productionApi.active()
         ]);
 
         if (!alive) return;
@@ -309,7 +307,8 @@ export default function Dashboard() {
         const allOrders = allOrdersResponse.data.data || [];
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
-        const allReadyOrders = allReadyResponse.data.data || [];
+        const allReadyOrders = allOrders.filter((order) => order.current_stage === 'Ready' && order.status !== 'Delivered');
+        const previousAllReadyOrders = previousAllOrders.filter((order) => order.current_stage === 'Ready' && order.status !== 'Delivered');
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
@@ -342,7 +341,7 @@ export default function Dashboard() {
           trends: {
             totalOrders: percentChange(allOrders.length, previousAllOrders.length),
             productionOrders: percentChange(activeProduction.length, previousProduction.length),
-            readyOrders: percentChange(readyOrders.length, previousReadyOrders.length),
+            readyOrders: percentChange(allReadyOrders.length, previousAllReadyOrders.length),
             revenue: percentChange(revenue, previousRevenue)
           },
           ordersOverview: series,
@@ -394,7 +393,7 @@ export default function Dashboard() {
       <div className="dashboard-stat-grid">
         <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.allOrdersCount} trend={dashboard.trends.totalOrders} color="blue" />
         <StatCard icon="bi-clipboard-data" label="In Production" value={dashboard.stats.productionOrders} trend={dashboard.trends.productionOrders} color="green" />
-        <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.allReadyOrdersCount} color="orange" />
+        <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.allReadyOrdersCount} trend={dashboard.trends.readyOrders} color="orange" />
         <StatCard icon="bi-currency-exchange" label="Total Revenue" value={money(dashboard.stats.revenue)} trend={dashboard.trends.revenue} color="purple" />
       </div>
 
