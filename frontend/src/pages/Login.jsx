@@ -14,7 +14,7 @@ export default function Login() {
   const [forgotMode, setForgotMode] = useState(false);
   const [otpMode, setOtpMode] = useState(false);
   const [resetMode, setResetMode] = useState(false);
-  const [forgotForm, setForgotForm] = useState({ username: '', otp: '', newPassword: '' });
+  const [forgotForm, setForgotForm] = useState({ username: '', otp: '', newPassword: '', confirmPassword: '' });
   const [message, setMessage] = useState('');
 
   if (isAuthenticated) {
@@ -78,18 +78,49 @@ export default function Login() {
     event.preventDefault();
     setError('');
     setMessage('');
+    
+    // Validate password
+    if (!forgotForm.newPassword.trim()) {
+      setError('Password is required');
+      return;
+    }
+    if (forgotForm.newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[a-z]/.test(forgotForm.newPassword)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+    if (!/[A-Z]/.test(forgotForm.newPassword)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(forgotForm.newPassword)) {
+      setError('Password must contain at least one number');
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(forgotForm.newPassword)) {
+      setError('Password must contain at least one special character');
+      return;
+    }
+    if (forgotForm.newPassword !== forgotForm.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
     setBusy(true);
     try {
-      await authApi.resetPassword({ 
-        username: forgotForm.username, 
-        otp: forgotForm.otp, 
-        newPassword: forgotForm.newPassword 
+      await authApi.resetPassword({
+        username: forgotForm.username,
+        otp: forgotForm.otp,
+        newPassword: forgotForm.newPassword
       });
       setMessage('Password reset successfully. Please login with your new password');
       setForgotMode(false);
       setOtpMode(false);
       setResetMode(false);
-      setForgotForm({ username: '', otp: '', newPassword: '' });
+      setForgotForm({ username: '', otp: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       setError(err.error?.message || 'Failed to reset password');
     } finally {
@@ -101,7 +132,7 @@ export default function Login() {
     setForgotMode(false);
     setOtpMode(false);
     setResetMode(false);
-    setForgotForm({ username: '', otp: '', newPassword: '' });
+    setForgotForm({ username: '', otp: '', newPassword: '', confirmPassword: '' });
     setError('');
     setMessage('');
   }
@@ -166,16 +197,35 @@ export default function Login() {
             {resetMode && (
               <>
                 <label className="form-label small">New Password</label>
-                <input 
-                  className="form-control form-control-sm mb-2" 
-                  type="password" 
-                  value={forgotForm.newPassword} 
-                  onChange={(event) => setForgotForm({ ...forgotForm, newPassword: event.target.value })} 
-                  required 
-                  minLength={8}
-                  autoFocus
+                <div className="input-group input-group-sm mb-2">
+                  <input
+                    className="form-control"
+                    type={showPassword ? 'text' : 'password'}
+                    value={forgotForm.newPassword}
+                    onChange={(event) => setForgotForm({ ...forgotForm, newPassword: event.target.value })}
+                    required
+                    minLength={8}
+                    autoFocus
+                  />
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                  </button>
+                </div>
+                <div className="form-text small mb-2">Minimum 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol</div>
+                
+                <label className="form-label small">Confirm Password</label>
+                <input
+                  className="form-control form-control-sm mb-2"
+                  type={showPassword ? 'text' : 'password'}
+                  value={forgotForm.confirmPassword}
+                  onChange={(event) => setForgotForm({ ...forgotForm, confirmPassword: event.target.value })}
+                  required
+                  placeholder="Confirm password"
                 />
-                <div className="form-text small mb-2">Must be at least 8 characters</div>
               </>
             )}
             
