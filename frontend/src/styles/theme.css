@@ -550,8 +550,9 @@ body {
 .quick-actions h2 {
   margin: 0;
   color: #101828;
-  font-size: 0.96rem;
-  font-weight: 800;
+  font-family: inherit;
+  font-size: var(--erp-font-size);
+  font-weight: 700;
 }
 
 .dashboard-panel-action,
@@ -860,8 +861,9 @@ body {
   padding: 0.7rem 0.9rem;
   border-radius: 8px;
   color: #fff;
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-family: inherit;
+  font-size: var(--erp-font-size);
+  font-weight: 700;
   text-decoration: none;
   box-shadow: 0 6px 16px rgba(16, 24, 40, 0.12);
 }
