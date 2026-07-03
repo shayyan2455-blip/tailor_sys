@@ -6,5 +6,4 @@ dist/
 .env.development
 .env.test
 !.env.example
-.env.production
 npm-debug.log*
