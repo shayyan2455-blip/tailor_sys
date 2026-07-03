@@ -29,6 +29,15 @@ const list = asyncHandler(async (req, res) => {
 
 const create = asyncHandler(async (req, res) => {
   validate(req);
+  
+  // First, complete any existing assignment for this order and stage
+  await query(req, `
+    UPDATE WorkAssignments
+    SET completed_at = NOW()
+    WHERE order_id = $1 AND stage = $2 AND completed_at IS NULL;
+  `, [Number(req.body.order_id), req.body.stage]);
+  
+  // Then create the new assignment
   const result = await query(req, `
     INSERT INTO WorkAssignments(order_id, worker_id, stage)
     VALUES($1, $2, $3)
