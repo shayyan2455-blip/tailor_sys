@@ -37,6 +37,8 @@ export default function DeliveryList() {
         { key: 'mobile', label: 'Mobile' },
         { key: 'address', label: 'Address' },
         { key: 'delivery_date', label: 'Due', render: (row) => formatDate(row.delivery_date) },
+        { key: 'total_amount', label: 'Amount' },
+        { key: 'advance', label: 'Advance' },
         { key: 'balance', label: 'Balance' },
         { key: 'current_stage', label: 'Stage', render: (row) => <StatusBadge value={row.current_stage} /> }
       ]} rows={rows} actions={(row) => (
