@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../components/shared/FormModal.jsx';
 
-const initial = { name: '', cost_per_unit: 0, supplier: '', is_active: true };
+const initial = { name: '', cost_per_unit: '', supplier: '', is_active: true };
 
 export default function FabricFormModal({ show, record, onClose, onSave }) {
   const [form, setForm] = useState(initial);

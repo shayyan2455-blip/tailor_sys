@@ -2,8 +2,8 @@ export default function OrderItemRow({ item, fabrics, onChange, onRemove, canRem
   return (
     <tr>
       <td><input className="form-control form-control-sm" value={item.garment_type} onChange={(event) => onChange({ ...item, garment_type: event.target.value })} required /></td>
-      <td><input className="form-control form-control-sm" type="number" min="1" value={item.qty} onChange={(event) => onChange({ ...item, qty: Number(event.target.value) })} required /></td>
-      <td><input className="form-control form-control-sm" type="number" min="0" step="0.01" value={item.rate} onChange={(event) => onChange({ ...item, rate: Number(event.target.value) })} required /></td>
+      <td><input className="form-control form-control-sm" type="number" min="1" value={item.qty || ''} onChange={(event) => onChange({ ...item, qty: Number(event.target.value) })} required /></td>
+      <td><input className="form-control form-control-sm" type="number" min="0" step="0.01" value={item.rate || ''} onChange={(event) => onChange({ ...item, rate: Number(event.target.value) })} required /></td>
       <td>
         <select className="form-select form-select-sm" value={item.fabric_id || ''} onChange={(event) => onChange({ ...item, fabric_id: event.target.value ? Number(event.target.value) : null })}>
           <option value="">None</option>

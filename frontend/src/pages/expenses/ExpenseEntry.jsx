@@ -4,7 +4,7 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
-const initial = { supplier_name: '', description: '', cost: 0, paid_amount: 0, balance: 0, category: '', expense_date: new Date().toISOString().slice(0, 10) };
+const initial = { supplier_name: '', description: '', cost: '', paid_amount: '', balance: '', category: '', expense_date: new Date().toISOString().slice(0, 10) };
 
 export default function ExpenseEntry() {
   const [rows, setRows] = useState([]);

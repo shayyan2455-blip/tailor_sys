@@ -17,7 +17,7 @@ export default function OrderBooking() {
     order_date: new Date().toISOString().slice(0, 10),
     delivery_date: '',
     notes: '',
-    advance: 0,
+    advance: '',
     items: [{ ...emptyItem }],
     measurements: {}
   });

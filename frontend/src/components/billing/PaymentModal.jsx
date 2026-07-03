@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import FormModal from '../shared/FormModal.jsx';
 
 const initial = {
-  amount: 0,
+  amount: '',
   payment_date: new Date().toISOString().slice(0, 10),
   payment_type: 'Partial',
   reference: '',

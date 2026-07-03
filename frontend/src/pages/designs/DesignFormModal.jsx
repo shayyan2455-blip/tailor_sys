@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../components/shared/FormModal.jsx';
 
-const initial = { name: '', description: '', default_rate: 0, is_active: true };
+const initial = { name: '', description: '', default_rate: '', is_active: true };
 
 export default function DesignFormModal({ show, record, onClose, onSave }) {
   const [form, setForm] = useState(initial);

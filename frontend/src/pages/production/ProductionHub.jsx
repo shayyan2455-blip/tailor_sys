@@ -15,7 +15,7 @@ export default function ProductionHub() {
   const [busy, setBusy] = useState('');
   const [assigning, setAssigning] = useState(null);
   const [amountPrompt, setAmountPrompt] = useState(null);
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState('');
   const [workerPrompt, setWorkerPrompt] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -45,21 +45,21 @@ export default function ProductionHub() {
   function toggle(order, stage) {
     const isCompleted = order.completed_stages?.includes(stage);
     const isCurrent = order.current_stage === stage;
-    
+
     if (isCompleted) {
       return; // already completed, do nothing
     }
-    
-    if (stage === 'Ready') {
-      // Ready stage - move and complete instantly without worker or amount
+
+    if (stage === 'Ready' || stage === 'Delivered') {
+      // Ready and Delivered stages - move and complete instantly without worker or amount
       moveToAndCompleteStage(order, stage);
       return;
     }
-    
+
     if (isCurrent) {
       // Current stage - prompt for amount to complete
       setAmountPrompt({ order, stage });
-      setAmount(0);
+      setAmount('');
     } else {
       // Move to this stage - prompt for worker selection
       setWorkerPrompt({ order, stage });
@@ -121,9 +121,9 @@ export default function ProductionHub() {
   async function completeStage(order, stage, amountValue) {
     setBusy(`${order.id}-${stage}`);
     try {
-      await productionApi.toggleStage({ order_id: order.id, stage, completed: true, amount: amountValue });
+      await productionApi.toggleStage({ order_id: order.id, stage, completed: true, amount: amountValue || 0 });
       setAmountPrompt(null);
-      setAmount(0);
+      setAmount('');
       await load();
     } catch (err) {
       console.error('Error completing stage:', err);

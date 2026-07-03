@@ -6,7 +6,7 @@ import FormModal from '../../components/shared/FormModal.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
-const initial = { worker_id: '', amount: 0, payment_date: new Date().toISOString().slice(0, 10), notes: '' };
+const initial = { worker_id: '', amount: '', payment_date: new Date().toISOString().slice(0, 10), notes: '' };
 
 export default function WorkerPaymentEntry() {
   const master = useMasterData();
@@ -45,9 +45,9 @@ export default function WorkerPaymentEntry() {
 
   function editPayment(row) {
     setEditing(row);
-    setForm({ 
-      worker_id: row.worker_id || '', 
-      amount: row.amount || 0,
+    setForm({
+      worker_id: row.worker_id || '',
+      amount: row.amount || '',
       payment_date: row.payment_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
       notes: row.notes || ''
     });
@@ -56,9 +56,9 @@ export default function WorkerPaymentEntry() {
 
   function addPayment(workerId) {
     setEditing(null);
-    setForm({ 
-      worker_id: String(workerId), 
-      amount: 0,
+    setForm({
+      worker_id: String(workerId),
+      amount: '',
       payment_date: new Date().toISOString().slice(0, 10),
       notes: ''
     });
