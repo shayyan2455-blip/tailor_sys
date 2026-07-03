@@ -66,6 +66,9 @@ export default function ProductionHub() {
     setBusy(`${order.id}-${stage}`);
     try {
       await productionApi.toggleStage({ order_id: order.id, stage });
+      setWorkerPrompt(null);
+      setSelectedWorker(null);
+      setWorkers([]);
       await load();
     } finally {
       setBusy('');
