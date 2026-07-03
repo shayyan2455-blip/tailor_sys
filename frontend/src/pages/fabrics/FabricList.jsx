@@ -1,4 +1,6 @@
+// Fabric list page component
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fabricApi } from '../../api/fabricApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
@@ -7,10 +9,12 @@ import { useMasterData } from '../../context/MasterDataContext.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 export default function FabricList() {
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const { invalidate } = useMasterData();
+  const createRequested = searchParams.get('new') === '1';
 
   async function load() {
     const response = await fabricApi.list();
@@ -18,6 +22,10 @@ export default function FabricList() {
   }
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (createRequested) setEditing({});
+  }, [createRequested]);
 
   async function save(payload) {
     if (editing?.id) await fabricApi.update(editing.id, payload);
