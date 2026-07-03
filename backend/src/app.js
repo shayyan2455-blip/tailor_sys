@@ -9,7 +9,7 @@ const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { csrfProtection } = require('./middleware/csrf.middleware');
 const logger = require('./utils/logger');
 
-// Redis session store (optional - falls back to memory store if not configured)
+// Redis session store (required for production)
 let sessionStore;
 let sessionStoreName = 'memory';
 if (env.REDIS_URL || env.REDIS_HOST) {
@@ -20,38 +20,47 @@ if (env.REDIS_URL || env.REDIS_HOST) {
     const redisClient = redis.createClient({
       url: redisUrl,
       socket: {
-        connectTimeout: 5000,
-        commandTimeout: 5000
+        connectTimeout: 10000,
+        commandTimeout: 10000,
+        reconnectStrategy: (retries) => {
+          if (retries > 10) {
+            logger.error('Redis reconnection failed after 10 attempts');
+            return new Error('Redis reconnection failed');
+          }
+          return Math.min(retries * 100, 3000);
+        }
       }
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis connection error:', err);
-      // If Redis fails, we'll continue with memory store
-      if (!sessionStore) {
-        logger.warn('Redis connection failed, using memory store for sessions');
-        sessionStore = undefined;
-        sessionStoreName = 'memory';
-      }
+      logger.error('Redis connection error:', err);
     });
 
-    // Try to connect, but don't block if it fails
+    redisClient.on('connect', () => {
+      logger.info('Redis connected successfully');
+    });
+
+    redisClient.on('reconnecting', () => {
+      logger.warn('Redis reconnecting...');
+    });
+
     redisClient.connect().then(() => {
       sessionStore = new RedisStore({ client: redisClient });
       sessionStoreName = 'redis';
       logger.info('Using Redis for session storage');
     }).catch((err) => {
-      logger.warn('Failed to connect to Redis, using memory store:', err.message);
-      sessionStore = undefined;
-      sessionStoreName = 'memory';
+      logger.error('Failed to connect to Redis:', err);
+      throw err;
     });
   } catch (err) {
-    logger.warn('Redis configuration failed, using memory store:', err.message);
-    sessionStore = undefined;
-    sessionStoreName = 'memory';
+    logger.error('Redis configuration failed:', err);
+    throw err;
   }
 } else {
-  logger.warn('Redis not configured, using memory store for sessions (not recommended for production)');
+  logger.error('Redis not configured - Redis is required for session storage in production');
+  if (env.NODE_ENV === 'production') {
+    throw new Error('Redis is required for production deployment');
+  }
 }
 
 const authRoutes = require('./routes/auth.routes');
