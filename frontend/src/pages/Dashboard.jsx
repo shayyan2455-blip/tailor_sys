@@ -277,6 +277,7 @@ export default function Dashboard() {
           financialResponse,
           paymentsResponse,
           allOrdersResponse,
+          previousAllOrdersResponse,
           productionResponse
         ] = await Promise.all([
           orderApi.list(params),
@@ -287,6 +288,7 @@ export default function Dashboard() {
           reportApi.dashboardStats(),
           paymentApi.list(),
           orderApi.list(),
+          orderApi.list(previousParams),
           productionApi.active()
         ]);
 
@@ -300,6 +302,7 @@ export default function Dashboard() {
         const financials = financialResponse.data.data || {};
         const allPayments = paymentsResponse.data.data || [];
         const allOrders = allOrdersResponse.data.data || [];
+        const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
@@ -310,7 +313,7 @@ export default function Dashboard() {
 
         if (!alive) return;
 
-        const activeProduction = orders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
+        const activeProduction = allProductionOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
         const previousProduction = previousOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
         const revenue = payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
         const previousRevenue = previousPayments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
@@ -330,7 +333,7 @@ export default function Dashboard() {
             allOrdersCount: allOrders.length
           },
           trends: {
-            totalOrders: percentChange(orders.length, previousOrders.length),
+            totalOrders: percentChange(allOrders.length, previousAllOrders.length),
             productionOrders: percentChange(activeProduction.length, previousProduction.length),
             readyOrders: percentChange(readyOrders.length, previousReadyOrders.length),
             revenue: percentChange(revenue, previousRevenue)
