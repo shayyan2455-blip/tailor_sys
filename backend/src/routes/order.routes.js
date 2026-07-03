@@ -9,7 +9,7 @@ router.use(requireAuth);
 router.get('/', requireRole('Admin', 'Manager'), parsePagination, controller.list);
 router.get('/delivery', requireRole('Admin', 'Manager'), parsePagination, controller.deliveryList);
 router.get('/:id', requireRole('Admin', 'Manager'), controller.detail);
-router.post('/new', requireRole('Admin', 'Manager'), auditMiddleware('Order'), controller.rules, controller.create);
+router.post('/', requireRole('Admin', 'Manager'), auditMiddleware('Order'), controller.rules, controller.create);
 router.put('/:id', requireRole('Admin', 'Manager'), auditMiddleware('Order'), controller.rules, controller.update);
 
 module.exports = router;
