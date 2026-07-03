@@ -81,7 +81,7 @@ export default function ProductionHub() {
       // First move to the stage
       await productionApi.toggleStage({ order_id: order.id, stage });
       // Then assign the worker
-      await assignmentApi.create({ order_id: order.id, worker_id, stage });
+      await assignmentApi.create({ order_id: order.id, worker_id: workerId, stage });
       setWorkerPrompt(null);
       setSelectedWorker(null);
       await load();
