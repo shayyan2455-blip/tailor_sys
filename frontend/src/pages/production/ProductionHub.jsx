@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { productionApi } from '../../api/productionApi';
+import { workerApi } from '../../api/workerApi';
+import { assignmentApi } from '../../api/assignmentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import StageCheckboxRow from '../../components/production/StageCheckboxRow.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
@@ -14,6 +16,9 @@ export default function ProductionHub() {
   const [assigning, setAssigning] = useState(null);
   const [amountPrompt, setAmountPrompt] = useState(null);
   const [amount, setAmount] = useState(0);
+  const [workerPrompt, setWorkerPrompt] = useState(null);
+  const [workers, setWorkers] = useState([]);
+  const [selectedWorker, setSelectedWorker] = useState(null);
   const { user } = useAuth();
 
   async function load() {
@@ -25,6 +30,16 @@ export default function ProductionHub() {
     }
   }
 
+  async function loadWorkers(stage) {
+    try {
+      const response = await workerApi.list();
+      const filteredWorkers = response.data.data.filter(w => w.default_stage === stage && w.is_active);
+      setWorkers(filteredWorkers);
+    } catch (err) {
+      console.error('Error loading workers:', err);
+    }
+  }
+
   useEffect(() => { load(); }, []);
 
   function toggle(order, stage) {
@@ -32,7 +47,7 @@ export default function ProductionHub() {
     const isCurrent = order.current_stage === stage;
     
     if (isCompleted) {
-      return; //_already completed, do nothing
+      return; // already completed, do nothing
     }
     
     if (isCurrent) {
@@ -40,8 +55,10 @@ export default function ProductionHub() {
       setAmountPrompt({ order, stage });
       setAmount(0);
     } else {
-      // Move to this stage
-      moveToStage(order, stage);
+      // Move to this stage - prompt for worker selection
+      setWorkerPrompt({ order, stage });
+      setSelectedWorker(null);
+      loadWorkers(stage);
     }
   }
 
@@ -49,6 +66,21 @@ export default function ProductionHub() {
     setBusy(`${order.id}-${stage}`);
     try {
       await productionApi.toggleStage({ order_id: order.id, stage });
+      await load();
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function moveToStageWithWorker(order, stage, workerId) {
+    setBusy(`${order.id}-${stage}`);
+    try {
+      // First move to the stage
+      await productionApi.toggleStage({ order_id: order.id, stage });
+      // Then assign the worker
+      await assignmentApi.create({ order_id: order.id, worker_id, stage });
+      setWorkerPrompt(null);
+      setSelectedWorker(null);
       await load();
     } finally {
       setBusy('');
@@ -111,6 +143,32 @@ export default function ProductionHub() {
             onChange={(e) => setAmount(Number(e.target.value))} 
             autoFocus 
           />
+        </div>
+      </FormModal>
+      <FormModal 
+        show={Boolean(workerPrompt)} 
+        title={`Assign Worker for ${workerPrompt?.stage} Stage`} 
+        onSubmit={() => selectedWorker && moveToStageWithWorker(workerPrompt?.order, workerPrompt?.stage, selectedWorker)} 
+        onClose={() => { setWorkerPrompt(null); setSelectedWorker(null); setWorkers([]); }} 
+        busy={busy !== ''}
+      >
+        <div className="mb-3">
+          <label className="form-label small">Select a worker (default stage: {workerPrompt?.stage})</label>
+          {workers.length === 0 ? (
+            <p className="text-muted small">No workers with default stage "{workerPrompt?.stage}" found. Use the assign button to assign any worker.</p>
+          ) : (
+            <select 
+              className="form-select form-select-sm" 
+              value={selectedWorker || ''} 
+              onChange={(e) => setSelectedWorker(Number(e.target.value))}
+              autoFocus
+            >
+              <option value="">Select a worker...</option>
+              {workers.map(worker => (
+                <option key={worker.id} value={worker.id}>{worker.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       </FormModal>
     </div>
