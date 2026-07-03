@@ -1,5 +1,5 @@
 /**
- * Format a date string to "Wednesday, July 1st, 2026" format
+ * Format a date string to "Friday, 3rd July 2026" format
  * @param {string|Date} date - Date string or Date object
  * @returns {string} Formatted date string
  */
@@ -9,14 +9,13 @@ export function formatDate(date) {
   const d = new Date(date);
   if (isNaN(d.getTime())) return date;
   
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formatted = d.toLocaleDateString('en-US', options);
-  
-  // Add ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
   const day = d.getDate();
   const suffix = getOrdinalSuffix(day);
+  const month = d.toLocaleDateString('en-US', { month: 'long' });
+  const year = d.getFullYear();
   
-  return formatted.replace(day, `${day}${suffix}`);
+  return `${weekday}, ${day}${suffix} ${month} ${year}`;
 }
 
 /**

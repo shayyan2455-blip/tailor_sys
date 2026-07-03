@@ -7,6 +7,7 @@ import CustomerLookup from '../../components/orders/CustomerLookup.jsx';
 import MeasurementForm from '../../components/orders/MeasurementForm.jsx';
 import OrderItemsGrid, { emptyItem } from '../../components/orders/OrderItemsGrid.jsx';
 import BalanceSummary from '../../components/orders/BalanceSummary.jsx';
+import { formatDate } from '../../utils/dateFormat.js';
 
 export default function OrderBooking() {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ export default function OrderBooking() {
                 onChange={(event) => setUseSaved(event.target.checked)}
               />
               <label className="form-check-label small" htmlFor="useSavedMeasurements">
-                Use customer's saved measurements (last updated: {new Date(savedMeasurements.updated_at).toLocaleDateString()})
+                Use customer's saved measurements (last updated: {formatDate(savedMeasurements.updated_at)})
               </label>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { authApi } from '../../api/authApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import FormModal from '../../components/shared/FormModal.jsx';
+import { formatDate } from '../../utils/dateFormat.js';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -87,7 +88,7 @@ export default function UserManagement() {
         { key: 'username', label: 'Username' },
         { key: 'role', label: 'Role' },
         { key: 'is_active', label: 'Active', render: (row) => row.is_active ? 'Yes' : 'No' },
-        { key: 'created_at', label: 'Created', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' }
+        { key: 'created_at', label: 'Created', render: (row) => row.created_at ? formatDate(row.created_at) : '-' }
       ]} rows={users} />
       <FormModal
         show={showModal}
