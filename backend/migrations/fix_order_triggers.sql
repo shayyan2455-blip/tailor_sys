@@ -1,6 +1,14 @@
 -- Fix ambiguous column references in order calculation functions
 
--- Drop existing functions first
+-- Drop existing triggers
+DROP TRIGGER IF EXISTS trg_OrderItems_Summary ON OrderItems;
+DROP TRIGGER IF EXISTS trg_Payments_Summary ON Payments;
+
+-- Drop existing trigger functions
+DROP FUNCTION IF EXISTS trg_OrderItems_Summary();
+DROP FUNCTION IF EXISTS trg_Payments_Summary();
+
+-- Drop existing calculation functions
 DROP FUNCTION IF EXISTS RecalculateOrderSummary(integer);
 DROP FUNCTION IF EXISTS RecalculateOrderStage(integer);
 
@@ -51,3 +59,50 @@ BEGIN
     WHERE id = p_order_id AND status <> 'Cancelled';
 END;
 $$ LANGUAGE plpgsql;
+
+-- Recreate trigger functions
+CREATE FUNCTION trg_OrderItems_Summary()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM RecalculateOrderSummary(NEW.order_id);
+        PERFORM RecalculateOrderStage(NEW.order_id);
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        PERFORM RecalculateOrderSummary(NEW.order_id);
+        PERFORM RecalculateOrderStage(NEW.order_id);
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM RecalculateOrderSummary(OLD.order_id);
+        PERFORM RecalculateOrderStage(OLD.order_id);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE FUNCTION trg_Payments_Summary()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM RecalculateOrderSummary(NEW.order_id);
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        PERFORM RecalculateOrderSummary(NEW.order_id);
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM RecalculateOrderSummary(OLD.order_id);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Recreate triggers
+CREATE TRIGGER trg_OrderItems_Summary
+AFTER INSERT OR UPDATE OR DELETE ON OrderItems
+FOR EACH ROW EXECUTE FUNCTION trg_OrderItems_Summary();
+
+CREATE TRIGGER trg_Payments_Summary
+AFTER INSERT OR UPDATE OR DELETE ON Payments
+FOR EACH ROW EXECUTE FUNCTION trg_Payments_Summary();
