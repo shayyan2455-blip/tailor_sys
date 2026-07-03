@@ -1,15 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
-
-const execAsync = promisify(exec);
-
+const { pg, query } = require('../config/db');
 const env = require('../config/env');
 
 const backupDir = env.BACKUP_DIRECTORY;
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-const backupFile = path.join(backupDir, `tailor_erp_backup_${timestamp}.sql`);
+const backupFile = path.join(backupDir, `tailor_erp_backup_${timestamp}.json`);
 
 async function createBackup() {
   try {
@@ -18,24 +14,33 @@ async function createBackup() {
       fs.mkdirSync(backupDir, { recursive: true });
     }
 
-    // Build pg_dump command for PostgreSQL
-    const dbUrl = env.DATABASE_URL;
-    if (!dbUrl) {
-      throw new Error('DATABASE_URL environment variable is required for PostgreSQL backup');
-    }
-
-    const pgDump = `pg_dump "${dbUrl}" > "${backupFile}"`;
-    
     console.log('Starting database backup...');
-    const { stdout, stderr } = await execAsync(pgDump, { shell: true });
     
-    if (stderr) {
-      console.error('Backup stderr:', stderr);
+    // Get list of all tables
+    const tablesResult = await pg.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+      ORDER BY table_name;
+    `);
+    
+    const tables = tablesResult.rows.map(row => row.table_name);
+    const backupData = { timestamp, tables: {} };
+    
+    // Dump each table
+    for (const table of tables) {
+      const dataResult = await pg.query(`SELECT * FROM "${table}"`);
+      backupData.tables[table] = dataResult.rows;
+      console.log(`Backed up table: ${table} (${dataResult.rows.length} rows)`);
     }
+    
+    // Write backup file
+    fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2));
     
     console.log('Backup completed successfully:', backupFile);
     
-    // Clean up old backups (keep last 7 days)
+    // Clean up old backups (keep last 7 backups)
     await cleanupOldBackups();
     
     return backupFile;
@@ -48,12 +53,12 @@ async function createBackup() {
 async function cleanupOldBackups() {
   try {
     const files = fs.readdirSync(backupDir);
-    const backupFiles = files.filter(f => f.startsWith('tailor_erp_backup_') && f.endsWith('.sql'));
+    const backupFiles = files.filter(f => f.startsWith('tailor_erp_backup_') && f.endsWith('.json'));
     
     // Sort by date (newest first)
     backupFiles.sort((a, b) => {
-      const dateA = a.match(/tailor_erp_backup_(.+)\.sql/)[1];
-      const dateB = b.match(/tailor_erp_backup_(.+)\.sql/)[1];
+      const dateA = a.match(/tailor_erp_backup_(.+)\.json/)[1];
+      const dateB = b.match(/tailor_erp_backup_(.+)\.json/)[1];
       return dateB.localeCompare(dateA);
     });
     
