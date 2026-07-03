@@ -37,7 +37,14 @@ async function insertItems(run, orderId, items) {
     await run(`
       INSERT INTO OrderItems(order_id, garment_type, qty, rate, fabric_id, remarks, stage_booked_at)
       VALUES ($1, $2, $3, $4, $5, $6, NOW());
-    `, [orderId, items[index].garment_type, Number(items[index].qty), Number(items[index].rate), items[index].fabric_id || null, items[index].remarks || null]);
+    `, [
+      orderId,
+      items[index].garment_type,
+      Number(items[index].qty),
+      Number(items[index].rate),
+      items[index].fabric_id || null,
+      items[index].remarks || null
+    ]);
   }
 }
 
