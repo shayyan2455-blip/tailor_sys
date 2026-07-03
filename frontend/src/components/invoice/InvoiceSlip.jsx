@@ -18,10 +18,14 @@ export default function InvoiceSlip({ order, items = [], payments = [] }) {
         <div className="col-6 small">
           <div><strong>Customer:</strong></div>
           <div>{order?.customer_name}</div>
+          <div className="mt-2"><strong>Address:</strong></div>
+          <div>{order?.address || '-'}</div>
         </div>
         <div className="col-6 small text-end">
           <div><strong>Mobile:</strong></div>
           <div>{order?.mobile}</div>
+          <div className="mt-2"><strong>Advance:</strong></div>
+          <div>{Number(order?.advance || 0).toLocaleString()}</div>
         </div>
       </div>
       <table className="table table-sm">
@@ -35,13 +39,11 @@ export default function InvoiceSlip({ order, items = [], payments = [] }) {
       <div className="row mt-2">
         <div className="col-6 small">
           <div><strong>Total:</strong></div>
-          <div><strong>Paid:</strong></div>
-          <div><strong>Balance:</strong></div>
+          <div className="mt-2"><strong>Balance:</strong></div>
         </div>
         <div className="col-6 small text-end">
           <div>{Number(order?.total_amount || 0).toLocaleString()}</div>
-          <div>{paid.toLocaleString()}</div>
-          <div>{Number(order?.balance || 0).toLocaleString()}</div>
+          <div className="mt-2">{Number(order?.balance || 0).toLocaleString()}</div>
         </div>
       </div>
     </section>
