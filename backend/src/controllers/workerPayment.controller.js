@@ -20,9 +20,9 @@ const list = asyncHandler(async (req, res) => {
     FROM WorkerPayments wp
     INNER JOIN Workers w ON w.id = wp.worker_id
     INNER JOIN Users u ON u.id = wp.recorded_by
-    WHERE ($1 IS NULL OR wp.worker_id = $1)
-      AND ($2 IS NULL OR wp.payment_date >= $2)
-      AND ($3 IS NULL OR wp.payment_date <= $3)
+    WHERE ($1::int IS NULL OR wp.worker_id = $1::int)
+      AND ($2::date IS NULL OR wp.payment_date >= $2::date)
+      AND ($3::date IS NULL OR wp.payment_date <= $3::date)
     ORDER BY wp.payment_date DESC, wp.id DESC;
   `, [req.query.worker_id ? Number(req.query.worker_id) : null, req.query.from || null, req.query.to || null]);
   res.json({ data: result.rows });
@@ -61,7 +61,7 @@ const workerBalance = asyncHandler(async (req, res) => {
     FROM Workers w
     LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
     LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
-    WHERE ($1 IS NULL OR w.id = $1)
+    WHERE ($1::int IS NULL OR w.id = $1::int)
     GROUP BY w.id, w.name
     ORDER BY w.name;
   `, [req.query.worker_id ? Number(req.query.worker_id) : null]);
