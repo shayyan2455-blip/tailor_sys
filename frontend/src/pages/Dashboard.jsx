@@ -281,7 +281,8 @@ export default function Dashboard() {
           paymentsResponse,
           allOrdersResponse,
           previousAllOrdersResponse,
-          productionResponse
+          productionResponse,
+          deliveryResponse
         ] = await Promise.all([
           orderApi.list(params),
           orderApi.list(previousParams),
@@ -292,7 +293,8 @@ export default function Dashboard() {
           paymentApi.list(),
           orderApi.list(),
           orderApi.list(previousParams),
-          productionApi.active()
+          productionApi.active(),
+          orderApi.deliveryList()
         ]);
 
         if (!alive) return;
@@ -307,8 +309,7 @@ export default function Dashboard() {
         const allOrders = allOrdersResponse.data.data || [];
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
-        const allReadyOrders = allOrders.filter((order) => order.current_stage === 'Ready' || (order.status === 'Delivered' && !order.delivery_date));
-        const previousAllReadyOrders = previousAllOrders.filter((order) => order.current_stage === 'Ready' || (order.status === 'Delivered' && !order.delivery_date));
+        const deliveryOrders = deliveryResponse.data.data || [];
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
@@ -336,12 +337,12 @@ export default function Dashboard() {
             readyOrders: readyOrders.length,
             revenue,
             allOrdersCount: allOrders.length,
-            allReadyOrdersCount: allReadyOrders.length
+            allReadyOrdersCount: deliveryOrders.length
           },
           trends: {
             totalOrders: percentChange(allOrders.length, previousAllOrders.length),
             productionOrders: percentChange(activeProduction.length, previousProduction.length),
-            readyOrders: percentChange(allReadyOrders.length, previousAllReadyOrders.length),
+            readyOrders: percentChange(deliveryOrders.length, 0),
             revenue: percentChange(revenue, previousRevenue)
           },
           ordersOverview: series,
