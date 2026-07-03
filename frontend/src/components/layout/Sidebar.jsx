@@ -26,14 +26,14 @@ const navItems = [
   { to: '/system/config', label: 'System Config', icon: 'bi-sliders', roles: ['Admin'], end: true }
 ];
 
-export default function Sidebar({ collapsed }) {
+export default function Sidebar({ collapsed, mobileMenuOpen }) {
   const { user } = useAuth();
   const location = useLocation();
   const role = user?.role;
   const visible = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className={`erp-sidebar border-end bg-white ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`erp-sidebar border-end bg-white ${collapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
       <nav className="nav nav-pills flex-column gap-1 p-2">
         {visible.map((item) => (
           <NavLink 
@@ -55,7 +55,7 @@ export default function Sidebar({ collapsed }) {
             title={collapsed ? item.label : undefined}
           >
             <i className={`bi ${item.icon}`} />
-            {!collapsed && <span className="text-truncate">{item.label}</span>}
+            {(!collapsed || mobileMenuOpen) && <span className="text-truncate">{item.label}</span>}
           </NavLink>
         ))}
       </nav>

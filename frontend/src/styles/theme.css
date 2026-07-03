@@ -140,17 +140,95 @@ body {
 @media (max-width: 768px) {
   .erp-sidebar {
     position: fixed;
-    left: 0;
-    z-index: 25;
+    left: -100%;
+    top: var(--erp-header-height);
+    width: 280px;
+    height: calc(100vh - var(--erp-header-height));
+    z-index: 30;
     box-shadow: 0 8px 20px rgba(16, 24, 40, 0.14);
+    transition: left 0.3s ease;
+  }
+
+  .erp-sidebar.mobile-open {
+    left: 0;
   }
 
   .erp-sidebar.collapsed {
-    transform: translateX(-100%);
+    transform: none;
+    width: 280px;
   }
 
   .erp-main {
     padding: 0.5rem;
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    top: var(--erp-header-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 25;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .page-toolbar h1 {
+    font-size: 1.25rem;
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px; /* Better touch target */
+  }
+
+  .form-control-sm,
+  .form-select-sm {
+    font-size: 16px; /* Prevent iOS zoom */
+    min-height: 44px; /* Better touch target */
+  }
+
+  .input-group-sm .btn {
+    min-height: 44px;
+  }
+
+  .nav-link {
+    min-height: 48px; /* Better touch target */
+    padding: 0.75rem 1rem;
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .card {
+    margin-bottom: 0.75rem;
+  }
+
+  .row {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+  }
+
+  .row > * {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 }
 
