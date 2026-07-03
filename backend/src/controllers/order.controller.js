@@ -75,10 +75,10 @@ const list = asyncHandler(async (req, res) => {
            o.current_stage, o.status, c.name AS customer_name, c.mobile
     FROM Orders o
     INNER JOIN Customers c ON c.id = o.customer_id
-    WHERE ($1 IS NULL OR o.status = $1)
-      AND ($2 IS NULL OR o.current_stage = $2)
-      AND ($3 IS NULL OR o.order_date >= $3)
-      AND ($4 IS NULL OR o.order_date <= $4)
+    WHERE ($1::text IS NULL OR o.status = $1::text)
+      AND ($2::text IS NULL OR o.current_stage = $2::text)
+      AND ($3::date IS NULL OR o.order_date >= $3::date)
+      AND ($4::date IS NULL OR o.order_date <= $4::date)
     ORDER BY o.order_date DESC, o.id DESC
     LIMIT 300;
   `, [req.query.status || null, req.query.stage || null, req.query.from || null, req.query.to || null]);
