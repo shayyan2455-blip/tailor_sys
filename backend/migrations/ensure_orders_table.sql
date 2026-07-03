@@ -16,6 +16,29 @@ CREATE TABLE IF NOT EXISTS Orders (
     CONSTRAINT FK_Orders_user FOREIGN KEY (created_by) REFERENCES Users(id)
 );
 
+-- Add foreign key constraints if table already exists without them
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'fk_orders_customer' 
+    AND conrelid = 'orders'::regclass
+  ) THEN
+    ALTER TABLE Orders ADD CONSTRAINT FK_Orders_customer FOREIGN KEY (customer_id) REFERENCES Customers(id);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'fk_orders_user' 
+    AND conrelid = 'orders'::regclass
+  ) THEN
+    ALTER TABLE Orders ADD CONSTRAINT FK_Orders_user FOREIGN KEY (created_by) REFERENCES Users(id);
+  END IF;
+END $$;
+
 -- Add index for performance
 CREATE INDEX IF NOT EXISTS IX_Orders_customer_id ON Orders(customer_id);
 CREATE INDEX IF NOT EXISTS IX_Orders_order_date ON Orders(order_date);
