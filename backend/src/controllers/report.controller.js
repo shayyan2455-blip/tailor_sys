@@ -13,8 +13,8 @@ async function orderReport(req, stage, status) {
     SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.balance,
            o.current_stage, o.status, c.name AS customer_name, c.mobile
     FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
-    WHERE ($1 IS NULL OR o.current_stage = $1)
-      AND ($2 IS NULL OR o.status = $2)
+    WHERE ($1::text IS NULL OR o.current_stage = $1::text)
+      AND ($2::text IS NULL OR o.status = $2::text)
       AND ($3::date IS NULL OR o.order_date >= $3::date)
       AND ($4::date IS NULL OR o.order_date <= $4::date)
     ORDER BY o.delivery_date, o.id;
