@@ -18,6 +18,7 @@ import {
 import { orderApi } from '../api/orderApi';
 import { paymentApi } from '../api/paymentApi';
 import { reportApi } from '../api/reportApi';
+import { productionApi } from '../api/productionApi';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const stageColors = ['#2f80ed', '#35c98f', '#ffad21', '#8954e9', '#22b8cf', '#64748b'];
@@ -34,7 +35,8 @@ const emptyDashboard = {
     totalOrders: 0,
     productionOrders: 0,
     readyOrders: 0,
-    revenue: 0
+    revenue: 0,
+    allOrdersCount: 0
   },
   trends: {
     totalOrders: 0,
@@ -50,7 +52,8 @@ const emptyDashboard = {
   activityFeed: [],
   topItems: [],
   productionTotal: 0,
-  totalDue: 0
+  totalDue: 0,
+  allProductionOrders: []
 };
 
 function toNumber(value) {
@@ -272,7 +275,9 @@ export default function Dashboard() {
           previousReadyResponse,
           recoveryResponse,
           financialResponse,
-          paymentsResponse
+          paymentsResponse,
+          allOrdersResponse,
+          productionResponse
         ] = await Promise.all([
           orderApi.list(params),
           orderApi.list(previousParams),
@@ -280,7 +285,9 @@ export default function Dashboard() {
           reportApi.readyOrders(previousParams),
           reportApi.recovery(params),
           reportApi.dashboardStats(),
-          paymentApi.list()
+          paymentApi.list(),
+          orderApi.list(),
+          productionApi.active()
         ]);
 
         if (!alive) return;
@@ -292,6 +299,8 @@ export default function Dashboard() {
         const duePayments = recoveryResponse.data.data || [];
         const financials = financialResponse.data.data || {};
         const allPayments = paymentsResponse.data.data || [];
+        const allOrders = allOrdersResponse.data.data || [];
+        const allProductionOrders = productionResponse.data.data || [];
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
@@ -305,7 +314,7 @@ export default function Dashboard() {
         const previousProduction = previousOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
         const revenue = payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
         const previousRevenue = previousPayments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
-        const productionGroups = activeProduction.reduce((groups, order) => {
+        const productionGroups = allProductionOrders.reduce((groups, order) => {
           const label = stageLabel(order.current_stage);
           groups.set(label, (groups.get(label) || 0) + 1);
           return groups;
@@ -317,7 +326,8 @@ export default function Dashboard() {
             totalOrders: orders.length,
             productionOrders: activeProduction.length,
             readyOrders: readyOrders.length,
-            revenue
+            revenue,
+            allOrdersCount: allOrders.length
           },
           trends: {
             totalOrders: percentChange(orders.length, previousOrders.length),
@@ -336,9 +346,10 @@ export default function Dashboard() {
           duePayments: duePayments.slice(0, 5),
           activityFeed: buildActivityFeed(orders, readyOrders, payments),
           topItems: calculateTopItems(orderDetails),
-          productionTotal: activeProduction.length,
+          productionTotal: allProductionOrders.length,
           totalDue: duePayments.reduce((sum, row) => sum + toNumber(row.balance), 0),
-          financials
+          financials,
+          allProductionOrders
         });
       } catch (err) {
         if (alive) setError(err?.error?.message || 'Unable to load dashboard data');
@@ -371,7 +382,7 @@ export default function Dashboard() {
       {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
       <div className="dashboard-stat-grid">
-        <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.totalOrders} trend={dashboard.trends.totalOrders} color="blue" />
+        <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.allOrdersCount} color="blue" />
         <StatCard icon="bi-clipboard-data" label="In Production" value={dashboard.stats.productionOrders} trend={dashboard.trends.productionOrders} color="green" />
         <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.readyOrders} trend={dashboard.trends.readyOrders} color="orange" />
         <StatCard icon="bi-currency-exchange" label="Total Revenue" value={money(dashboard.stats.revenue)} trend={dashboard.trends.revenue} color="purple" />
