@@ -9,6 +9,8 @@ export default function ChangePassword() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Password visibility toggles for better UX
+
   async function submit(event) {
     event.preventDefault();
     setError('');
