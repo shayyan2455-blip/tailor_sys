@@ -170,6 +170,15 @@ export default function ProductionHub() {
             </select>
           )}
         </div>
+        <div className="d-flex gap-2">
+          <button 
+            type="button" 
+            className="btn btn-sm btn-danger" 
+            onClick={() => moveToStage(workerPrompt?.order, workerPrompt?.stage)}
+          >
+            Move Without Worker
+          </button>
+        </div>
       </FormModal>
     </div>
   );
