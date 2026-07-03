@@ -3,10 +3,16 @@ const { pg, query } = require('../config/db');
 const env = require('../config/env');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
+const { createBackup } = require('../utils/backup');
 
 const backup = asyncHandler(async (req, res) => {
-  // Supabase handles automatic backups. This endpoint is disabled for PostgreSQL/Supabase.
-  throw httpError(501, 'Database backup is handled automatically by Supabase. Manual backups are not supported.');
+  try {
+    const backupFile = await createBackup();
+    res.json({ data: { file: backupFile } });
+  } catch (error) {
+    console.error('Backup error:', error);
+    throw httpError(500, `Backup failed: ${error.message}`);
+  }
 });
 
 const settings = asyncHandler(async (_req, res) => {

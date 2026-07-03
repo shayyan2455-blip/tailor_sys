@@ -9,7 +9,7 @@ const env = require('../config/env');
 
 const backupDir = env.BACKUP_DIRECTORY;
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-const backupFile = path.join(backupDir, `tailor_erp_backup_${timestamp}.bak`);
+const backupFile = path.join(backupDir, `tailor_erp_backup_${timestamp}.sql`);
 
 async function createBackup() {
   try {
@@ -18,11 +18,16 @@ async function createBackup() {
       fs.mkdirSync(backupDir, { recursive: true });
     }
 
-    // Build sqlcmd command
-    const sqlcmd = `sqlcmd -S ${env.DB_SERVER},${env.DB_PORT} -d ${env.DB_NAME} -E -Q "BACKUP DATABASE [${env.DB_NAME}] TO DISK = N'${backupFile}' WITH FORMAT, MEDIANAME = 'TailorERP_Full', NAME = 'Full Backup of TailorERP';"`;
+    // Build pg_dump command for PostgreSQL
+    const dbUrl = env.DATABASE_URL;
+    if (!dbUrl) {
+      throw new Error('DATABASE_URL environment variable is required for PostgreSQL backup');
+    }
+
+    const pgDump = `pg_dump "${dbUrl}" > "${backupFile}"`;
     
     console.log('Starting database backup...');
-    const { stdout, stderr } = await execAsync(sqlcmd);
+    const { stdout, stderr } = await execAsync(pgDump, { shell: true });
     
     if (stderr) {
       console.error('Backup stderr:', stderr);
@@ -43,12 +48,12 @@ async function createBackup() {
 async function cleanupOldBackups() {
   try {
     const files = fs.readdirSync(backupDir);
-    const backupFiles = files.filter(f => f.startsWith('tailor_erp_backup_') && f.endsWith('.bak'));
+    const backupFiles = files.filter(f => f.startsWith('tailor_erp_backup_') && f.endsWith('.sql'));
     
     // Sort by date (newest first)
     backupFiles.sort((a, b) => {
-      const dateA = a.match(/tailor_erp_backup_(.+)\.bak/)[1];
-      const dateB = b.match(/tailor_erp_backup_(.+)\.bak/)[1];
+      const dateA = a.match(/tailor_erp_backup_(.+)\.sql/)[1];
+      const dateB = b.match(/tailor_erp_backup_(.+)\.sql/)[1];
       return dateB.localeCompare(dateA);
     });
     
