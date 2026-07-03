@@ -82,7 +82,9 @@ function shortMoney(value) {
 }
 
 function percentChange(current, previous) {
-  if (!previous) return current ? 100 : 0;
+  if (previous === 0 || previous === null || previous === undefined) {
+    return current > 0 ? 100 : 0;
+  }
   return ((current - previous) / previous) * 100;
 }
 
@@ -385,7 +387,7 @@ export default function Dashboard() {
       {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
       <div className="dashboard-stat-grid">
-        <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.allOrdersCount} color="blue" />
+        <StatCard icon="bi-bag-check" label="Total Orders" value={dashboard.stats.allOrdersCount} trend={dashboard.trends.totalOrders} color="blue" />
         <StatCard icon="bi-clipboard-data" label="In Production" value={dashboard.stats.productionOrders} trend={dashboard.trends.productionOrders} color="green" />
         <StatCard icon="bi-truck" label="Ready to Deliver" value={dashboard.stats.readyOrders} trend={dashboard.trends.readyOrders} color="orange" />
         <StatCard icon="bi-currency-exchange" label="Total Revenue" value={money(dashboard.stats.revenue)} trend={dashboard.trends.revenue} color="purple" />
@@ -580,6 +582,9 @@ function StatCard({ icon, label, value, trend, color }) {
 }
 
 function Trend({ value, label = 'vs previous period' }) {
+  if (value === null || value === undefined || isNaN(value)) {
+    return null;
+  }
   const isPositive = value >= 0;
   return (
     <span className={`dashboard-trend ${isPositive ? 'positive' : 'negative'}`}>
