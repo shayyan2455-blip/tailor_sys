@@ -321,14 +321,14 @@ export default function Dashboard() {
 
         const activeProduction = allProductionOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
         const previousProduction = previousOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
-        const revenue = payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
-        const previousRevenue = previousPayments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
+        const revenue = allPayments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
+        const previousRevenue = 0;
         const productionGroups = allProductionOrders.reduce((groups, order) => {
           const label = stageLabel(order.current_stage);
           groups.set(label, (groups.get(label) || 0) + 1);
           return groups;
         }, new Map());
-        const series = buildSeries(orders, payments, range.start, range.end);
+        const series = buildSeries(allOrders, allPayments, range.start, range.end);
 
         setDashboard({
           stats: {
