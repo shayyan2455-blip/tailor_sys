@@ -50,6 +50,12 @@ export default function ProductionHub() {
       return; // already completed, do nothing
     }
     
+    if (stage === 'Ready') {
+      // Ready stage - move and complete instantly without worker or amount
+      moveToAndCompleteStage(order, stage);
+      return;
+    }
+    
     if (isCurrent) {
       // Current stage - prompt for amount to complete
       setAmountPrompt({ order, stage });
@@ -70,6 +76,24 @@ export default function ProductionHub() {
       setSelectedWorker(null);
       setWorkers([]);
       await load();
+    } catch (err) {
+      console.error('Error moving to stage:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.error?.message || err?.message || 'Failed to move to stage';
+      alert(errorMessage);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function moveToAndCompleteStage(order, stage) {
+    setBusy(`${order.id}-${stage}`);
+    try {
+      await productionApi.toggleStage({ order_id: order.id, stage, completed: true, amount: 0 });
+      await load();
+    } catch (err) {
+      console.error('Error moving and completing stage:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.error?.message || err?.message || 'Failed to complete stage';
+      alert(errorMessage);
     } finally {
       setBusy('');
     }
@@ -85,6 +109,10 @@ export default function ProductionHub() {
       setWorkerPrompt(null);
       setSelectedWorker(null);
       await load();
+    } catch (err) {
+      console.error('Error moving to stage with worker:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.error?.message || err?.message || 'Failed to assign worker';
+      alert(errorMessage);
     } finally {
       setBusy('');
     }
