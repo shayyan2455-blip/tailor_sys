@@ -55,14 +55,11 @@ const workerBalance = asyncHandler(async (req, res) => {
     SELECT 
       w.id AS worker_id,
       w.name AS worker_name,
-      COALESCE(SUM(we.amount), 0) AS total_earnings,
-      COALESCE(SUM(wp.amount), 0) AS total_paid,
-      COALESCE(SUM(we.amount), 0) - COALESCE(SUM(wp.amount), 0) AS balance
+      COALESCE((SELECT SUM(amount) FROM WorkerEarnings WHERE worker_id = w.id), 0) AS total_earnings,
+      COALESCE((SELECT SUM(amount) FROM WorkerPayments WHERE worker_id = w.id), 0) AS total_paid,
+      COALESCE((SELECT SUM(amount) FROM WorkerEarnings WHERE worker_id = w.id), 0) - COALESCE((SELECT SUM(amount) FROM WorkerPayments WHERE worker_id = w.id), 0) AS balance
     FROM Workers w
-    LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
-    LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
     WHERE ($1::int IS NULL OR w.id = $1::int)
-    GROUP BY w.id, w.name
     ORDER BY w.name;
   `, [req.query.worker_id ? Number(req.query.worker_id) : null]);
   res.json({ data: result.rows });
