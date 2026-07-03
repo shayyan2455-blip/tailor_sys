@@ -12,11 +12,20 @@ const logger = require('./utils/logger');
 // Redis session store (required for production)
 let sessionStore;
 let sessionStoreName = 'memory';
+logger.info('Redis configuration check:', { 
+  hasRedisUrl: !!env.REDIS_URL, 
+  hasRedisHost: !!env.REDIS_HOST,
+  redisUrlPrefix: env.REDIS_URL ? env.REDIS_URL.substring(0, 20) + '...' : 'none',
+  redisHost: env.REDIS_HOST || 'none',
+  redisPort: env.REDIS_PORT || 'none'
+});
+
 if (env.REDIS_URL || env.REDIS_HOST) {
   try {
     const { RedisStore } = require('connect-redis');
     const redis = require('redis');
     const redisUrl = env.REDIS_URL || `${env.REDIS_TLS ? 'rediss' : 'redis'}://:${env.REDIS_PASSWORD}@${env.REDIS_HOST}:${env.REDIS_PORT}/${env.REDIS_DB}`;
+    logger.info('Attempting to connect to Redis...');
     const redisClient = redis.createClient({
       url: redisUrl,
       socket: {
@@ -50,6 +59,7 @@ if (env.REDIS_URL || env.REDIS_HOST) {
       logger.info('Using Redis for session storage');
     }).catch((err) => {
       logger.error('Failed to connect to Redis:', err);
+      logger.error('Redis URL used:', redisUrl.replace(/:[^:@]*@/, ':****@'));
       throw err;
     });
   } catch (err) {
