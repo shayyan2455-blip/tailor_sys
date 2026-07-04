@@ -141,11 +141,11 @@ const create = asyncHandler(async (req, res) => {
       }
     }
 
-    // If there's remaining amount, add to customer credit balance
+    // If there's remaining amount, subtract from customer credit balance (if they have credit)
     if (remainingAmount > 0) {
       await run(`
         UPDATE Customers
-        SET credit_balance = credit_balance + $1
+        SET credit_balance = GREATEST(0, credit_balance - $1)
         WHERE id = $2;
       `, [remainingAmount, Number(req.body.customer_id)]);
       appliedAmount += remainingAmount;
