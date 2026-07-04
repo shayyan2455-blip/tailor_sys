@@ -19,6 +19,7 @@ import { orderApi } from '../api/orderApi';
 import { paymentApi } from '../api/paymentApi';
 import { reportApi } from '../api/reportApi';
 import { productionApi } from '../api/productionApi';
+import { workerPaymentApi } from '../api/workerPaymentApi';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const stageColors = ['#2f80ed', '#35c98f', '#ffad21', '#8954e9', '#22b8cf', '#64748b'];
@@ -51,9 +52,10 @@ const emptyDashboard = {
   recentOrders: [],
   duePayments: [],
   activityFeed: [],
-  topItems: [],
+  workerDues: [],
   productionTotal: 0,
   totalDue: 0,
+  totalWorkerDue: 0,
   allProductionOrders: []
 };
 
@@ -282,7 +284,8 @@ export default function Dashboard() {
           allOrdersResponse,
           previousAllOrdersResponse,
           productionResponse,
-          deliveryResponse
+          deliveryResponse,
+          workerDuesResponse
         ] = await Promise.all([
           orderApi.list(params),
           orderApi.list(previousParams),
@@ -294,7 +297,8 @@ export default function Dashboard() {
           orderApi.list(),
           orderApi.list(previousParams),
           productionApi.active(),
-          orderApi.deliveryList()
+          orderApi.deliveryList(),
+          workerPaymentApi.workerBalance()
         ]);
 
         if (!alive) return;
@@ -310,6 +314,7 @@ export default function Dashboard() {
         const previousAllOrders = previousAllOrdersResponse.data.data || [];
         const allProductionOrders = productionResponse.data.data || [];
         const deliveryOrders = deliveryResponse.data.data || [];
+        const workerDues = workerDuesResponse.data.data || [];
         const ordersWithBalance = allOrders.filter((order) => toNumber(order.balance) > 0);
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
@@ -330,6 +335,7 @@ export default function Dashboard() {
           return groups;
         }, new Map());
         const series = buildSeries(allOrders, allPayments, range.start, range.end);
+        const workersWithDue = workerDues.filter((worker) => toNumber(worker.balance) > 0);
 
         setDashboard({
           stats: {
@@ -356,9 +362,10 @@ export default function Dashboard() {
           recentOrders: allOrders.slice(0, 5),
           duePayments: ordersWithBalance.slice(0, 5),
           activityFeed: buildActivityFeed(orders, readyOrders, payments),
-          topItems: calculateTopItems(orderDetails),
+          workerDues: workersWithDue.slice(0, 5),
           productionTotal: allProductionOrders.length,
           totalDue: ordersWithBalance.reduce((sum, row) => sum + toNumber(row.balance), 0),
+          totalWorkerDue: workersWithDue.reduce((sum, row) => sum + toNumber(row.balance), 0),
           financials,
           allProductionOrders
         });
@@ -504,19 +511,23 @@ export default function Dashboard() {
           </div>
         </DashboardPanel>
 
-        <DashboardPanel title="Top Selling Items" action={<span className="dashboard-chip">This period</span>}>
-          <div className="top-items-list">
-            {dashboard.topItems.map((item, index) => (
-              <div className="top-item-row" key={item.name}>
-                <span className="top-item-icon"><i className={`bi ${index === 0 ? 'bi-person-standing' : 'bi-layers'}`} /></span>
+        <DashboardPanel title="Worker Payment Dues" action={<Link to="/worker-payments">View All</Link>}>
+          <div className="dashboard-list compact">
+            {dashboard.workerDues.map((row) => (
+              <Link className="dashboard-list-row" to={`/worker-payments?worker=${row.worker_id}`} key={row.worker_id}>
+                <span className="dashboard-row-icon"><i className="bi bi-person-work-tools" /></span>
                 <span className="dashboard-row-copy">
-                  <strong>{item.name}</strong>
-                  <small>{money(item.amount)}</small>
+                  <strong>{row.worker_name}</strong>
+                  <small>Earned: {money(row.total_earnings)}</small>
                 </span>
-                <span className="top-item-percent">{item.percent}%</span>
-              </div>
+                <span className="due-amount">{money(row.balance)}</span>
+              </Link>
             ))}
-            {!dashboard.topItems.length && <EmptyState label="No sold items in this period" />}
+            {!dashboard.workerDues.length && <EmptyState label="No worker dues" />}
+            <div className="dashboard-total-row">
+              <span>Total Due</span>
+              <strong>{money(dashboard.totalWorkerDue)}</strong>
+            </div>
           </div>
         </DashboardPanel>
       </div>
