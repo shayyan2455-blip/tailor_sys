@@ -43,6 +43,7 @@ const recovery = asyncHandler(async (req, res) => {
              c.name AS customer_name, c.mobile, c.credit_balance
       FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
       WHERE o.balance > 0
+        AND o.status <> 'Delivered'
         AND ($1::date IS NULL OR o.order_date >= $1::date)
         AND ($2::date IS NULL OR o.order_date <= $2::date)
       ORDER BY o.balance DESC, o.delivery_date;

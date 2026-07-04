@@ -23,11 +23,15 @@ export default function RecoveryReport() {
         customer_name: row.customer_name,
         mobile: row.mobile,
         total_balance: 0,
+        credit_balance: 0,
         orders: []
       };
     }
-    acc[customerKey].total_balance += Number(row.balance || 0);
-    if (row.id) {
+    // If row has no id, it's a credit balance entry
+    if (!row.id) {
+      acc[customerKey].credit_balance += Number(row.balance || 0);
+    } else {
+      acc[customerKey].total_balance += Number(row.balance || 0);
       acc[customerKey].orders.push(row);
     }
     return acc;
