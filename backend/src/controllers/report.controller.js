@@ -76,15 +76,11 @@ const workerLedger = asyncHandler(async (req, res) => {
              COALESCE(SUM(we.amount), 0) - COALESCE(SUM(wp.amount), 0) AS balance
       FROM Workers w
       LEFT JOIN WorkerEarnings we ON we.worker_id = w.id
-        AND ($1::date IS NULL OR we.earned_at >= $1::date)
-        AND ($2::date IS NULL OR we.earned_at <= $2::date)
       LEFT JOIN WorkerPayments wp ON wp.worker_id = w.id
-        AND ($1::date IS NULL OR wp.payment_date >= $1::date)
-        AND ($2::date IS NULL OR wp.payment_date <= $2::date)
-      WHERE ($3::int IS NULL OR w.id = $3::int)
+      WHERE ($1::int IS NULL OR w.id = $1::int)
       GROUP BY w.id, w.name
       ORDER BY w.name;
-    `, [req.query.from || null, req.query.to || null, req.query.worker_id ? Number(req.query.worker_id) : null]);
+    `, [req.query.worker_id ? Number(req.query.worker_id) : null]);
     res.json({ data: result.rows });
   } catch (error) {
     console.error('Worker ledger error:', error);
