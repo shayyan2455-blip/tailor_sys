@@ -178,27 +178,38 @@ const toggleStage = asyncHandler(async (req, res) => {
 
       // Create worker earnings when stage is completed
       if (completed) {
-        const assignments = await run(`
-          SELECT wa.worker_id, wa.order_id
-          FROM WorkAssignments wa
-          WHERE wa.order_id = $1 AND wa.stage = $2 AND wa.completed_at IS NOT NULL;
-        `, [orderId, stage]);
-
         const amount = Number(req.body.amount) || 0;
 
         // Only create worker earnings if amount is greater than 0
         if (amount > 0) {
-          for (const assignment of assignments.rows) {
+          let targetWorkerId = null;
+
+          if (req.session.user.role === 'Worker') {
+            // Worker completing their own assigned stage
+            targetWorkerId = req.session.user.workerId;
+          } else {
+            // Admin completing stage - get the assigned worker for this stage
+            const assignment = await run(`
+              SELECT worker_id FROM WorkAssignments
+              WHERE order_id = $1 AND stage = $2 AND completed_at IS NOT NULL
+              ORDER BY completed_at DESC LIMIT 1;
+            `, [orderId, stage]);
+            if (assignment.rows[0]) {
+              targetWorkerId = assignment.rows[0].worker_id;
+            }
+          }
+
+          if (targetWorkerId) {
             const existingEarning = await run(`
               SELECT id FROM WorkerEarnings
               WHERE worker_id = $1 AND order_id = $2 AND stage = $3;
-            `, [assignment.worker_id, assignment.order_id, stage]);
+            `, [targetWorkerId, orderId, stage]);
 
             if (!existingEarning.rows[0]) {
               await run(`
                 INSERT INTO WorkerEarnings(worker_id, order_id, stage, amount)
                 VALUES($1, $2, $3, $4);
-              `, [assignment.worker_id, assignment.order_id, stage, amount]);
+              `, [targetWorkerId, orderId, stage, amount]);
             }
           }
         }
