@@ -44,7 +44,6 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
           type="number"
           min="0"
           step="0.01"
-          max={totalBalance}
           value={form.payment_amount}
           onChange={(e) => setForm({ ...form, payment_amount: e.target.value })}
           required

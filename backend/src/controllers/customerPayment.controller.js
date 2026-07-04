@@ -5,7 +5,7 @@ const httpError = require('../utils/httpError');
 
 const rules = [
   body('customer_id').isInt({ min: 1 }).withMessage('Customer is required'),
-  body('amount').isFloat({ min: 0 }).withMessage('Amount must be non-negative'),
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
   body('payment_type').isIn(['Advance', 'Partial', 'Final']).withMessage('Invalid payment type'),
   body('payment_date').optional().isISO8601().withMessage('Invalid payment date'),
   body('notes').optional().trim()
