@@ -34,7 +34,7 @@ const activeList = asyncHandler(async (req, res) => {
   console.log('Worker ID filter:', req.session.user.role === 'Worker' ? req.session.user.workerId : null);
   
   const result = await query(req, `
-    SELECT o.id, o.order_date, o.delivery_date, o.current_stage, o.status, c.name AS customer_name
+    SELECT o.id, o.order_date, o.delivery_date, o.current_stage, o.status, o.total_amount, o.advance, o.balance, c.name AS customer_name
     FROM Orders o
     INNER JOIN Customers c ON c.id = o.customer_id
     WHERE o.status <> 'Delivered'
