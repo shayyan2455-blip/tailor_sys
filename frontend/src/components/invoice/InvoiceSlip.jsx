@@ -1,4 +1,5 @@
 import './invoice.css';
+import { formatDate } from '../../utils/dateFormat';
 
 export default function InvoiceSlip({ order, items = [], payments = [], measurements = null }) {
   const paid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -27,7 +28,7 @@ export default function InvoiceSlip({ order, items = [], payments = [], measurem
         </div>
         <div className="text-end">
           <div><strong>Order: </strong> #{order?.id}</div>
-          <div><strong>Date: </strong> {order?.order_date}</div>
+          <div><strong>Date: </strong> {formatDate(order?.order_date)}</div>
         </div>
       </div>
       <div className="row mb-4">
@@ -44,6 +45,12 @@ export default function InvoiceSlip({ order, items = [], payments = [], measurem
           <div className="mt-3">{Number(order?.advance || 0).toLocaleString()}</div>
         </div>
       </div>
+      {order?.notes && (
+        <div className="mb-4 p-2 bg-light rounded">
+          <strong>Notes: </strong>
+          <span>{order.notes}</span>
+        </div>
+      )}
       {measurements && (
         <div className="mb-4">
           <h3 className="h6 mb-3">Measurements</h3>
@@ -58,10 +65,10 @@ export default function InvoiceSlip({ order, items = [], payments = [], measurem
         </div>
       )}
       <table className="table">
-        <thead><tr><th>Garment</th><th className="text-center">Qty</th><th className="text-end">Rate</th><th className="text-end">Amount</th></tr></thead>
+        <thead><tr><th>Garment</th><th className="text-center">Qty</th><th className="text-end">Rate</th><th className="text-end">Amount</th><th className="text-end">Remarks</th></tr></thead>
         <tbody>
           {items.map((item) => (
-            <tr key={item.id}><td>{item.garment_type}</td><td className="text-center">{item.qty}</td><td className="text-end">{Number(item.rate).toLocaleString()}</td><td className="text-end">{Number(item.amount).toLocaleString()}</td></tr>
+            <tr key={item.id}><td>{item.garment_type}</td><td className="text-center">{item.qty}</td><td className="text-end">{Number(item.rate).toLocaleString()}</td><td className="text-end">{Number(item.amount).toLocaleString()}</td><td className="text-end small">{item.remarks || '-'}</td></tr>
           ))}
         </tbody>
       </table>
