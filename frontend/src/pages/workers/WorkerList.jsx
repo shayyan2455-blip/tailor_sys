@@ -11,7 +11,7 @@ import { formatDate } from '../../utils/dateFormat';
 export default function WorkerList() {
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
+  const [toggling, setToggling] = useState(null);
   const [creatingUser, setCreatingUser] = useState(null);
   const { invalidate } = useMasterData();
   const { user } = useAuth();
@@ -34,9 +34,9 @@ export default function WorkerList() {
     await load();
   }
 
-  async function remove() {
-    await workerApi.remove(deleting.id);
-    setDeleting(null);
+  async function toggleStatus() {
+    await workerApi.update(toggling.id, { is_active: !toggling.is_active });
+    setToggling(null);
     invalidate('workers');
     await load();
   }
@@ -56,12 +56,25 @@ export default function WorkerList() {
         <div className="btn-group btn-group-sm">
           <button className="btn btn-outline-secondary" type="button" onClick={() => setEditing(row)} title="Edit"><i className="bi bi-pencil" /></button>
           {user?.role === 'Admin' && <button className="btn btn-outline-primary" type="button" onClick={() => setCreatingUser(row)} title="Create User Account"><i className="bi bi-person-plus" /></button>}
-          <button className="btn btn-outline-danger" type="button" onClick={() => setDeleting(row)} title="Deactivate"><i className="bi bi-person-x" /></button>
+          <button 
+            className={`btn ${row.is_active ? 'btn-outline-danger' : 'btn-outline-success'}`} 
+            type="button" 
+            onClick={() => setToggling(row)} 
+            title={row.is_active ? 'Deactivate' : 'Activate'}
+          >
+            <i className={`bi ${row.is_active ? 'bi-person-x' : 'bi-person-check'}`} />
+          </button>
         </div>
       )} />
       <WorkerFormModal show={Boolean(editing)} record={editing?.id ? editing : null} onClose={() => setEditing(null)} onSave={save} />
       <CreateWorkerUserModal show={Boolean(creatingUser)} worker={creatingUser} onClose={() => setCreatingUser(null)} />
-      <ConfirmModal show={Boolean(deleting)} title="Deactivate Worker" message={`Deactivate ${deleting?.name || 'this worker'}?`} onClose={() => setDeleting(null)} onConfirm={remove} />
+      <ConfirmModal 
+        show={Boolean(toggling)} 
+        title={toggling?.is_active ? 'Deactivate Worker' : 'Activate Worker'} 
+        message={`${toggling?.is_active ? 'Deactivate' : 'Activate'} ${toggling?.name || 'this worker'}?`} 
+        onClose={() => setToggling(null)} 
+        onConfirm={toggleStatus} 
+      />
     </div>
   );
 }
