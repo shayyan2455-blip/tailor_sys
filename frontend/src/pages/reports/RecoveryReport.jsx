@@ -31,6 +31,10 @@ export default function RecoveryReport() {
     // If row has no id, it's a credit balance entry
     if (!row.id) {
       acc[customerKey].credit_balance += Number(row.balance || 0);
+      // Store customer_id from credit balance entry
+      if (!acc[customerKey].customer_id && row.customer_id) {
+        acc[customerKey].customer_id = row.customer_id;
+      }
     } else {
       acc[customerKey].total_balance += Number(row.balance || 0);
       acc[customerKey].orders.push(row);

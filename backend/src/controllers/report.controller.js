@@ -39,7 +39,7 @@ const deliveredOrders = asyncHandler(async (req, res) => {
 const recovery = asyncHandler(async (req, res) => {
   try {
     const result = await query(req, `
-      SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
+      SELECT o.id, o.customer_id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
              c.name AS customer_name, c.mobile, c.credit_balance
       FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
       WHERE o.balance > 0
@@ -51,7 +51,7 @@ const recovery = asyncHandler(async (req, res) => {
 
     // Also include customers with credit balance (they owe money from previous deliveries)
     const creditResult = await query(req, `
-      SELECT NULL AS id, NULL AS order_date, NULL AS delivery_date, 0 AS total_amount, 0 AS advance,
+      SELECT NULL AS id, c.id AS customer_id, NULL AS order_date, NULL AS delivery_date, 0 AS total_amount, 0 AS advance,
              c.credit_balance AS balance, c.name AS customer_name, c.mobile, c.credit_balance
       FROM Customers c
       WHERE c.credit_balance > 0
