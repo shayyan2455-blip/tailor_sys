@@ -73,6 +73,20 @@ CREATE TABLE dbo.Payments (
 );
 GO
 
+CREATE TABLE dbo.CustomerPayments (
+    id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_CustomerPayments PRIMARY KEY,
+    customer_id INT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    payment_date DATE NOT NULL CONSTRAINT DF_CustomerPayments_payment_date DEFAULT (CONVERT(date, SYSUTCDATETIME())),
+    payment_type NVARCHAR(20) NOT NULL,
+    notes NVARCHAR(500) NULL,
+    recorded_by INT NOT NULL,
+    applied_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_CustomerPayments_applied_amount DEFAULT (0),
+    CONSTRAINT FK_CustomerPayments_Customers FOREIGN KEY (customer_id) REFERENCES dbo.Customers(id),
+    CONSTRAINT FK_CustomerPayments_Users FOREIGN KEY (recorded_by) REFERENCES dbo.Users(id)
+);
+GO
+
 CREATE TABLE dbo.Expenses (
     id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Expenses PRIMARY KEY,
     supplier_name NVARCHAR(160) NULL,

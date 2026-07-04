@@ -68,6 +68,19 @@ CREATE TABLE Payments (
     recorded_by INT NOT NULL
 );
 
+CREATE TABLE CustomerPayments (
+    id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    payment_type VARCHAR(20) NOT NULL,
+    notes VARCHAR(500) NULL,
+    recorded_by INT NOT NULL,
+    applied_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    CONSTRAINT FK_CustomerPayments_Customers FOREIGN KEY (customer_id) REFERENCES Customers(id),
+    CONSTRAINT FK_CustomerPayments_Users FOREIGN KEY (recorded_by) REFERENCES Users(id)
+);
+
 CREATE TABLE Expenses (
     id SERIAL PRIMARY KEY,
     supplier_name VARCHAR(160) NULL,

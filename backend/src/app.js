@@ -78,6 +78,7 @@ async function createApp() {
   const authRoutes = require('./routes/auth.routes');
   const customerRoutes = require('./routes/customer.routes');
   const customerMeasurementRoutes = require('./routes/customerMeasurement.routes');
+  const customerPaymentRoutes = require('./routes/customerPayment.routes');
   const workerRoutes = require('./routes/worker.routes');
   const workerPaymentRoutes = require('./routes/workerPayment.routes');
   const designRoutes = require('./routes/design.routes');
@@ -202,6 +203,7 @@ async function createApp() {
   app.use('/api/v1/auth', authLimiter, authRoutes);
   app.use('/api/v1/customers', customerRoutes);
   app.use('/api/v1/customer-measurements', customerMeasurementRoutes);
+  app.use('/api/v1/customer-payments', customerPaymentRoutes);
   app.use('/api/v1/workers', workerRoutes);
   app.use('/api/v1/worker-payments', workerPaymentRoutes);
   app.use('/api/v1/designs', designRoutes);

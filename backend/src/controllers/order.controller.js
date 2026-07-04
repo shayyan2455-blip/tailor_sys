@@ -131,10 +131,18 @@ const detail = asyncHandler(async (req, res) => {
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const data = await transaction(req, async (run) => {
-    // Get customer's credit balance
+    // Get customer's credit balance and unapplied customer payments
     const customer = await run('SELECT credit_balance FROM Customers WHERE id = $1;', [Number(req.body.customer_id)]);
     const customerCredit = Number(customer.rows[0]?.credit_balance || 0);
-    const totalAdvance = Number(req.body.advance || 0) + customerCredit;
+
+    const unappliedPayments = await run(`
+      SELECT id, amount, applied_amount FROM CustomerPayments
+      WHERE customer_id = $1 AND amount > applied_amount
+      ORDER BY payment_date ASC;
+    `, [Number(req.body.customer_id)]);
+
+    const totalUnapplied = unappliedPayments.rows.reduce((sum, p) => sum + (Number(p.amount) - Number(p.applied_amount)), 0);
+    const totalAdvance = Number(req.body.advance || 0) + customerCredit + totalUnapplied;
 
     const inserted = await run(`
       INSERT INTO Orders(customer_id, order_date, delivery_date, notes, created_by)
@@ -178,6 +186,23 @@ const create = asyncHandler(async (req, res) => {
         SET credit_balance = 0
         WHERE id = $1;
       `, [Number(req.body.customer_id)]);
+    }
+
+    // Apply unapplied customer payments to this order
+    for (const payment of unappliedPayments.rows) {
+      const unappliedAmount = Number(payment.amount) - Number(payment.applied_amount);
+      if (unappliedAmount > 0) {
+        await run(`
+          INSERT INTO Payments(order_id, amount, payment_date, payment_type, notes, recorded_by)
+          VALUES($1, $2, $3, 'Advance', $4, $5);
+        `, [orderId, unappliedAmount, req.body.order_date, `Applied from customer payment #${payment.id}`, req.session.user.id]);
+
+        await run(`
+          UPDATE CustomerPayments
+          SET applied_amount = applied_amount + $1
+          WHERE id = $2;
+        `, [unappliedAmount, payment.id]);
+      }
     }
 
     const summary = await run('SELECT * FROM Orders WHERE id = $1;', [orderId]);

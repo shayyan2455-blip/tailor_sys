@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { reportApi } from '../../api/reportApi';
-import { paymentApi } from '../../api/paymentApi';
+import { customerPaymentApi } from '../../api/customerPaymentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ReportFilters from './ReportFilters.jsx';
 import RecoveryPaymentModal from '../../components/reports/RecoveryPaymentModal.jsx';
+import CustomerPaymentHistoryModal from '../../components/reports/CustomerPaymentHistoryModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 export default function RecoveryReport() {
@@ -12,13 +13,13 @@ export default function RecoveryReport() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [payingCustomer, setPayingCustomer] = useState(null);
+  const [viewingHistory, setViewingHistory] = useState(null);
 
   // Group data by customer to calculate total balance
   const customerBalances = rows.reduce((acc, row) => {
     const customerKey = `${row.customer_name}-${row.mobile}`;
     if (!acc[customerKey]) {
       acc[customerKey] = {
-        customer_id: row.id ? null : null, // Will be set from credit balance entries
         customer_name: row.customer_name,
         mobile: row.mobile,
         total_balance: 0,
@@ -46,15 +47,16 @@ export default function RecoveryReport() {
 
   async function handlePayment(paymentData) {
     try {
-      // For now, we'll record this as a payment against the first order with balance
-      // In a real implementation, you'd need a separate customer payments table
+      // Need to get customer_id from the orders
       const customerOrders = customerRows.find(c => c.customer_name === payingCustomer.customer_name && c.mobile === payingCustomer.mobile)?.orders || [];
       if (customerOrders.length > 0) {
-        await paymentApi.create({
-          order_id: customerOrders[0].id,
+        // Use the customer_id from the first order (all orders belong to same customer)
+        await customerPaymentApi.create({
+          customer_id: customerOrders[0].customer_id,
           amount: paymentData.payment_amount,
           payment_type: paymentData.payment_type,
-          payment_date: new Date().toISOString().split('T')[0]
+          payment_date: new Date().toISOString().split('T')[0],
+          notes: `Payment from recovery report for ${payingCustomer.customer_name}`
         });
       }
       setPayingCustomer(null);
@@ -97,11 +99,17 @@ export default function RecoveryReport() {
         { key: 'total_balance', label: 'Total Balance', render: (row) => <span className="text-danger">{row.total_balance.toLocaleString()}</span> },
         { key: 'order_count', label: 'Pending Orders', render: (row) => row.orders.length }
       ]} rows={customerRows} actions={(row) => (
-        <button className="btn btn-sm btn-success" type="button" onClick={() => setPayingCustomer(row)} title="Record Payment">
-          <i className="bi bi-cash" />
-        </button>
+        <div className="btn-group btn-group-sm">
+          <button className="btn btn-outline-success" type="button" onClick={() => setPayingCustomer(row)} title="Record Payment">
+            <i className="bi bi-cash" />
+          </button>
+          <button className="btn btn-outline-secondary" type="button" onClick={() => setViewingHistory(row)} title="View Payment History">
+            <i className="bi bi-clock-history" />
+          </button>
+        </div>
       )} />
       <RecoveryPaymentModal show={Boolean(payingCustomer)} customer={payingCustomer} onClose={() => setPayingCustomer(null)} onPayment={handlePayment} />
+      <CustomerPaymentHistoryModal show={Boolean(viewingHistory)} customer={viewingHistory} onClose={() => setViewingHistory(null)} />
     </div>
   );
 }
