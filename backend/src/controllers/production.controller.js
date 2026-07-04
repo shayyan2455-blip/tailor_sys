@@ -62,13 +62,32 @@ const activeList = asyncHandler(async (req, res) => {
     GROUP BY order_id;
   `, [orderIds]);
   
-  // Get all assignments in one query
+  // Get all assignments in one query - get worker for current stage or most recently completed stage
   const assignmentsResult = await query(req, `
-    SELECT wa.order_id, wa.stage, wa.completed_at, w.name AS worker_name, wa.worker_id AS assignment_worker_id
-    FROM WorkAssignments wa
-    LEFT JOIN Workers w ON w.id = wa.worker_id
-    WHERE wa.order_id = ANY($1) AND wa.completed_at IS NULL
-    ORDER BY wa.order_id, wa.assigned_at;
+    WITH ranked_assignments AS (
+      SELECT 
+        wa.order_id, 
+        wa.stage, 
+        wa.completed_at, 
+        w.name AS worker_name, 
+        wa.worker_id AS assignment_worker_id,
+        ROW_NUMBER() OVER (PARTITION BY wa.order_id ORDER BY 
+          CASE 
+            WHEN wa.stage = o.current_stage THEN 0
+            WHEN wa.completed_at IS NOT NULL THEN 1
+            ELSE 2
+          END,
+          wa.completed_at DESC NULLS LAST,
+          wa.assigned_at DESC
+        ) AS rn
+      FROM WorkAssignments wa
+      LEFT JOIN Workers w ON w.id = wa.worker_id
+      INNER JOIN Orders o ON o.id = wa.order_id
+      WHERE wa.order_id = ANY($1)
+    )
+    SELECT order_id, stage, completed_at, worker_name, assignment_worker_id
+    FROM ranked_assignments
+    WHERE rn = 1;
   `, [orderIds]);
   
   // Create maps for quick lookup

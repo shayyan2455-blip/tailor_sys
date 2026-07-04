@@ -36,6 +36,9 @@ export default function ReadyOrders() {
         { key: 'customer_name', label: 'Customer' },
         { key: 'mobile', label: 'Mobile' },
         { key: 'delivery_date', label: 'Delivery', render: (row) => formatDate(row.delivery_date) },
+        { key: 'current_stage', label: 'Stage' },
+        { key: 'assigned_stage', label: 'Assigned' },
+        { key: 'worker_name', label: 'Worker' },
         { key: 'balance', label: 'Balance' }
       ]} rows={rows} />
     </div>

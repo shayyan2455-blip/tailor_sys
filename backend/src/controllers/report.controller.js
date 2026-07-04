@@ -9,7 +9,7 @@ function dateParams(req) {
 }
 
 async function orderReport(req, stage, status) {
-  return query(req, `
+  const result = await query(req, `
     SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.balance,
            o.current_stage, o.status, c.name AS customer_name, c.mobile
     FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
@@ -19,6 +19,55 @@ async function orderReport(req, stage, status) {
       AND ($4::date IS NULL OR o.order_date <= $4::date)
     ORDER BY o.delivery_date, o.id;
   `, [stage, status, req.query.from || null, req.query.to || null]);
+
+  // If no orders, return empty array
+  if (result.rows.length === 0) {
+    return result;
+  }
+
+  // Get worker assignments for these orders
+  const orderIds = result.rows.map(o => o.id);
+  const assignmentsResult = await query(req, `
+    WITH ranked_assignments AS (
+      SELECT 
+        wa.order_id, 
+        wa.stage, 
+        wa.completed_at, 
+        w.name AS worker_name, 
+        wa.worker_id AS assignment_worker_id,
+        ROW_NUMBER() OVER (PARTITION BY wa.order_id ORDER BY 
+          CASE 
+            WHEN wa.stage = o.current_stage THEN 0
+            WHEN wa.completed_at IS NOT NULL THEN 1
+            ELSE 2
+          END,
+          wa.completed_at DESC NULLS LAST,
+          wa.assigned_at DESC
+        ) AS rn
+      FROM WorkAssignments wa
+      LEFT JOIN Workers w ON w.id = wa.worker_id
+      INNER JOIN Orders o ON o.id = wa.order_id
+      WHERE wa.order_id = ANY($1)
+    )
+    SELECT order_id, stage, worker_name, assignment_worker_id
+    FROM ranked_assignments
+    WHERE rn = 1;
+  `, [orderIds]);
+
+  // Create a map for quick lookup
+  const assignmentsMap = {};
+  assignmentsResult.rows.forEach(row => {
+    assignmentsMap[row.order_id] = row;
+  });
+
+  // Add assignment info to each order
+  result.rows = result.rows.map(order => ({
+    ...order,
+    assigned_stage: assignmentsMap[order.id]?.stage || null,
+    worker_name: assignmentsMap[order.id]?.worker_name || null
+  }));
+
+  return result;
 }
 
 const pendingOrders = asyncHandler(async (req, res) => {

@@ -35,6 +35,9 @@ export default function DeliveredOrders() {
         { key: 'id', label: 'Order' },
         { key: 'customer_name', label: 'Customer' },
         { key: 'order_date', label: 'Order Date', render: (row) => formatDate(row.order_date) },
+        { key: 'current_stage', label: 'Stage' },
+        { key: 'assigned_stage', label: 'Assigned' },
+        { key: 'worker_name', label: 'Worker' },
         { key: 'total_amount', label: 'Total' },
         { key: 'balance', label: 'Balance' }
       ]} rows={rows} />
