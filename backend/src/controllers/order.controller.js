@@ -13,7 +13,7 @@ const rules = [
   body('items.*.garment_type').trim().notEmpty().withMessage('Garment type is required'),
   body('items.*.qty').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('items.*.rate').isFloat({ min: 0 }).withMessage('Rate must be zero or greater'),
-  body('advance').optional().isFloat({ min: 0 })
+  body('advance').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 })
 ];
 
 function validate(req) {
