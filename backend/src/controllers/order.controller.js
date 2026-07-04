@@ -18,7 +18,11 @@ const rules = [
 
 function validate(req) {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) throw httpError(422, 'Validation failed', errors.array());
+  if (!errors.isEmpty()) {
+    console.error('Validation errors:', errors.array());
+    console.error('Request body:', req.body);
+    throw httpError(422, 'Validation failed', errors.array());
+  }
 }
 
 function itemParams(item, orderId, index) {
