@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { reportApi } from '../../api/reportApi';
+import { paymentApi } from '../../api/paymentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ReportFilters from './ReportFilters.jsx';
+import RecoveryPaymentModal from '../../components/reports/RecoveryPaymentModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 export default function RecoveryReport() {
@@ -9,6 +11,29 @@ export default function RecoveryReport() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [payingCustomer, setPayingCustomer] = useState(null);
+
+  // Group data by customer to calculate total balance
+  const customerBalances = rows.reduce((acc, row) => {
+    const customerKey = `${row.customer_name}-${row.mobile}`;
+    if (!acc[customerKey]) {
+      acc[customerKey] = {
+        customer_id: row.id ? null : null, // Will be set from credit balance entries
+        customer_name: row.customer_name,
+        mobile: row.mobile,
+        total_balance: 0,
+        orders: []
+      };
+    }
+    acc[customerKey].total_balance += Number(row.balance || 0);
+    if (row.id) {
+      acc[customerKey].orders.push(row);
+    }
+    return acc;
+  }, {});
+
+  const customerRows = Object.values(customerBalances);
+
   async function load() {
     try {
       setError('');
@@ -18,6 +43,28 @@ export default function RecoveryReport() {
       setError(err.error?.message || 'Failed to load report');
     }
   }
+
+  async function handlePayment(paymentData) {
+    try {
+      // For now, we'll record this as a payment against the first order with balance
+      // In a real implementation, you'd need a separate customer payments table
+      const customerOrders = customerRows.find(c => c.customer_name === payingCustomer.customer_name && c.mobile === payingCustomer.mobile)?.orders || [];
+      if (customerOrders.length > 0) {
+        await paymentApi.create({
+          order_id: customerOrders[0].id,
+          amount: paymentData.payment_amount,
+          payment_type: paymentData.payment_type,
+          payment_date: new Date().toISOString().split('T')[0]
+        });
+      }
+      setPayingCustomer(null);
+      await load();
+    } catch (err) {
+      console.error('Error recording payment:', err);
+      alert(err.error?.message || 'Failed to record payment');
+    }
+  }
+
   useEffect(() => { load(); }, []);
   return (
     <div>
@@ -45,13 +92,16 @@ export default function RecoveryReport() {
       <ReportFilters filters={filters} onChange={setFilters} onRun={load} />
       {error && <div className="alert alert-danger py-2 mb-2">{error}</div>}
       <DataTable searchable search={search} columns={[
-        { key: 'id', label: 'Order' },
         { key: 'customer_name', label: 'Customer' },
         { key: 'mobile', label: 'Mobile' },
-        { key: 'total_amount', label: 'Total' },
-        { key: 'advance', label: 'Advance' },
-        { key: 'balance', label: 'Balance' }
-      ]} rows={rows} />
+        { key: 'total_balance', label: 'Total Balance', render: (row) => <span className="text-danger">{row.total_balance.toLocaleString()}</span> },
+        { key: 'order_count', label: 'Pending Orders', render: (row) => row.orders.length }
+      ]} rows={customerRows} actions={(row) => (
+        <button className="btn btn-sm btn-success" type="button" onClick={() => setPayingCustomer(row)} title="Record Payment">
+          <i className="bi bi-cash" />
+        </button>
+      )} />
+      <RecoveryPaymentModal show={Boolean(payingCustomer)} customer={payingCustomer} onClose={() => setPayingCustomer(null)} onPayment={handlePayment} />
     </div>
   );
 }

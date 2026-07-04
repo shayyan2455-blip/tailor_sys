@@ -102,14 +102,6 @@ export default function DeliveryModal({ show, order, onClose, onDeliver }) {
           <p className="mb-0">Do you want to continue with the delivery?</p>
         </div>
       )}
-      <div className="d-flex gap-2 mt-3">
-        <button type="button" className="btn btn-sm btn-secondary" onClick={handleClose}>
-          Cancel
-        </button>
-        <button type="submit" className="btn btn-sm btn-success">
-          Deliver
-        </button>
-      </div>
     </FormModal>
   );
 }
