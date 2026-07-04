@@ -52,9 +52,15 @@ export default function ProductionHub() {
       return; // already completed, do nothing
     }
 
-    if (stage === 'Delivered') {
-      // Delivered stage - show delivery modal
+    if (stage === 'Delivered' && isCurrent) {
+      // Delivered stage and it's current - show delivery modal to complete delivery
       setDelivering(order);
+      return;
+    }
+
+    if (stage === 'Delivered' && !isCurrent) {
+      // Moving to Delivered stage - just move normally
+      moveToStage(order, stage);
       return;
     }
 
