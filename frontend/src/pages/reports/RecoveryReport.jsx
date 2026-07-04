@@ -100,7 +100,10 @@ export default function RecoveryReport() {
       <DataTable searchable search={search} columns={[
         { key: 'customer_name', label: 'Customer' },
         { key: 'mobile', label: 'Mobile' },
-        { key: 'total_balance', label: 'Total Balance', render: (row) => <span className="text-danger">{row.total_balance.toLocaleString()}</span> },
+        { key: 'total_balance', label: 'Total Balance', render: (row) => {
+          const total = row.total_balance + row.credit_balance;
+          return <span className="text-danger">{total.toLocaleString()}</span>;
+        }},
         { key: 'order_count', label: 'Pending Orders', render: (row) => row.orders.length }
       ]} rows={customerRows} actions={(row) => (
         <div className="btn-group btn-group-sm">

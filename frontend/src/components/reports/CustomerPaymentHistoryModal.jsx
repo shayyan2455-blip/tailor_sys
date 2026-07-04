@@ -47,6 +47,8 @@ export default function CustomerPaymentHistoryModal({ show, customer, onClose })
                 <th>Amount</th>
                 <th>Applied</th>
                 <th>Type</th>
+                <th>Source</th>
+                <th>Order</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -57,6 +59,12 @@ export default function CustomerPaymentHistoryModal({ show, customer, onClose })
                   <td>{Number(payment.amount).toLocaleString()}</td>
                   <td>{Number(payment.applied_amount).toLocaleString()}</td>
                   <td>{payment.payment_type}</td>
+                  <td>
+                    <span className={`badge ${payment.payment_source === 'CustomerPayment' ? 'bg-primary' : 'bg-info'}`}>
+                      {payment.payment_source === 'CustomerPayment' ? 'Customer' : 'Order'}
+                    </span>
+                  </td>
+                  <td>{payment.order_id_display || '-'}</td>
                   <td className="small">{payment.notes || '-'}</td>
                 </tr>
               ))}

@@ -17,18 +17,74 @@ function validate(req) {
 }
 
 const list = asyncHandler(async (req, res) => {
-  const result = await query(req, `
-    SELECT cp.*, c.name AS customer_name, c.mobile, u.username AS recorded_by_name
-    FROM CustomerPayments cp
-    INNER JOIN Customers c ON c.id = cp.customer_id
-    INNER JOIN Users u ON u.id = cp.recorded_by
-    WHERE ($1::int IS NULL OR cp.customer_id = $1::int)
-      AND ($2::date IS NULL OR cp.payment_date >= $2::date)
-      AND ($3::date IS NULL OR cp.payment_date <= $3::date)
-    ORDER BY cp.payment_date DESC, cp.id DESC
-    LIMIT 300;
-  `, [req.query.customer_id ? Number(req.query.customer_id) : null, req.query.from || null, req.query.to || null]);
-  res.json({ data: result.rows });
+  const customerId = req.query.customer_id ? Number(req.query.customer_id) : null;
+
+  if (customerId) {
+    // If customer_id is specified, return all payments for this customer (both CustomerPayments and Payments)
+    const result = await query(req, `
+      SELECT
+        cp.id,
+        cp.customer_id,
+        cp.amount,
+        cp.payment_date,
+        cp.payment_type,
+        cp.notes,
+        cp.applied_amount,
+        cp.recorded_by,
+        u.username AS recorded_by_name,
+        'CustomerPayment' AS payment_source,
+        NULL AS order_id,
+        NULL AS order_id_display
+      FROM CustomerPayments cp
+      INNER JOIN Users u ON u.id = cp.recorded_by
+      WHERE cp.customer_id = $1
+        AND ($2::date IS NULL OR cp.payment_date >= $2::date)
+        AND ($3::date IS NULL OR cp.payment_date <= $3::date)
+
+      UNION ALL
+
+      SELECT
+        p.id,
+        o.customer_id,
+        p.amount,
+        p.payment_date,
+        p.payment_type,
+        p.notes,
+        p.amount AS applied_amount,
+        p.recorded_by,
+        u.username AS recorded_by_name,
+        'OrderPayment' AS payment_source,
+        p.order_id,
+        o.id::text AS order_id_display
+      FROM Payments p
+      INNER JOIN Orders o ON o.id = p.order_id
+      INNER JOIN Users u ON u.id = p.recorded_by
+      WHERE o.customer_id = $1
+        AND ($2::date IS NULL OR p.payment_date >= $2::date)
+        AND ($3::date IS NULL OR p.payment_date <= $3::date)
+
+      ORDER BY payment_date DESC, id DESC
+      LIMIT 300;
+    `, [customerId, req.query.from || null, req.query.to || null]);
+    res.json({ data: result.rows });
+  } else {
+    // If no customer_id, return only CustomerPayments (for admin view)
+    const result = await query(req, `
+      SELECT cp.*, c.name AS customer_name, c.mobile, u.username AS recorded_by_name,
+             'CustomerPayment' AS payment_source,
+             NULL AS order_id,
+             NULL AS order_id_display
+      FROM CustomerPayments cp
+      INNER JOIN Customers c ON c.id = cp.customer_id
+      INNER JOIN Users u ON u.id = cp.recorded_by
+      WHERE ($1::int IS NULL OR cp.customer_id = $1::int)
+        AND ($2::date IS NULL OR cp.payment_date >= $2::date)
+        AND ($3::date IS NULL OR cp.payment_date <= $3::date)
+      ORDER BY cp.payment_date DESC, cp.id DESC
+      LIMIT 300;
+    `, [req.query.customer_id ? Number(req.query.customer_id) : null, req.query.from || null, req.query.to || null]);
+    res.json({ data: result.rows });
+  }
 });
 
 const create = asyncHandler(async (req, res) => {
