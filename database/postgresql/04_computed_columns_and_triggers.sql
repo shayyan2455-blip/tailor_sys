@@ -18,15 +18,15 @@ RETURNS VOID AS $$
 DECLARE
     stage VARCHAR(20) := 'Booked';
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM OrderItems oi WHERE oi.order_id = RecalculateOrderStage.order_id) THEN
         stage := 'Booked';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_delivered = false) THEN
+    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems oi WHERE oi.order_id = RecalculateOrderStage.order_id AND oi.stage_delivered = false) THEN
         stage := 'Delivered';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_ready = false) THEN
+    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems oi WHERE oi.order_id = RecalculateOrderStage.order_id AND oi.stage_ready = false) THEN
         stage := 'Ready';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_stitching = false) THEN
+    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems oi WHERE oi.order_id = RecalculateOrderStage.order_id AND oi.stage_stitching = false) THEN
         stage := 'Stitching';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_cutting = false) THEN
+    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems oi WHERE oi.order_id = RecalculateOrderStage.order_id AND oi.stage_cutting = false) THEN
         stage := 'Cutting';
     END IF;
 
@@ -38,7 +38,7 @@ BEGIN
             WHEN stage = 'Ready' THEN 'Ready'
             ELSE status
         END
-    WHERE id = order_id AND status <> 'Cancelled';
+    WHERE id = RecalculateOrderStage.order_id AND status <> 'Cancelled';
 END;
 $$ LANGUAGE plpgsql;
 
