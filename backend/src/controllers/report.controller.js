@@ -40,14 +40,26 @@ const recovery = asyncHandler(async (req, res) => {
   try {
     const result = await query(req, `
       SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
-             c.name AS customer_name, c.mobile
+             c.name AS customer_name, c.mobile, c.credit_balance
       FROM Orders o INNER JOIN Customers c ON c.id = o.customer_id
       WHERE o.balance > 0
         AND ($1::date IS NULL OR o.order_date >= $1::date)
         AND ($2::date IS NULL OR o.order_date <= $2::date)
       ORDER BY o.balance DESC, o.delivery_date;
     `, [req.query.from || null, req.query.to || null]);
-    res.json({ data: result.rows });
+
+    // Also include customers with credit balance (they owe money from previous deliveries)
+    const creditResult = await query(req, `
+      SELECT NULL AS id, NULL AS order_date, NULL AS delivery_date, 0 AS total_amount, 0 AS advance,
+             c.credit_balance AS balance, c.name AS customer_name, c.mobile, c.credit_balance
+      FROM Customers c
+      WHERE c.credit_balance > 0
+      ORDER BY c.credit_balance DESC;
+    `, []);
+
+    // Combine both results
+    const combinedData = [...result.rows, ...creditResult.rows];
+    res.json({ data: combinedData });
   } catch (error) {
     console.error('Recovery report error:', error);
     throw error;

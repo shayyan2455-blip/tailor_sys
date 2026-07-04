@@ -31,6 +31,7 @@ CREATE TABLE dbo.Customers (
     name NVARCHAR(160) NOT NULL,
     mobile NVARCHAR(30) NOT NULL,
     address NVARCHAR(500) NULL,
+    credit_balance DECIMAL(12,2) NOT NULL CONSTRAINT DF_Customers_credit_balance DEFAULT (0),
     created_at DATETIME2(0) NOT NULL CONSTRAINT DF_Customers_created_at DEFAULT (SYSUTCDATETIME())
 );
 GO

@@ -18,6 +18,13 @@ const toggleRules = [
   body('amount').optional({ nullable: true }).isFloat({ min: 0 })
 ];
 
+const deliverRules = [
+  body('order_id').isInt({ min: 1 }),
+  body('pickup_name').trim().notEmpty().withMessage('Pickup name is required'),
+  body('pickup_phone').trim().notEmpty().withMessage('Pickup phone is required'),
+  body('payment_amount').isFloat({ min: 0 }).withMessage('Payment amount must be non-negative')
+];
+
 function validate(req) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) throw httpError(422, 'Validation failed', errors.array());
@@ -212,6 +219,71 @@ const toggleStage = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
+const deliverOrder = asyncHandler(async (req, res) => {
+  validate(req);
+  const orderId = Number(req.body.order_id);
+  const pickupName = req.body.pickup_name;
+  const pickupPhone = req.body.pickup_phone;
+  const paymentAmount = Number(req.body.payment_amount);
+
+  const data = await transaction(req, async (run) => {
+    // Get order details
+    const order = await run(`
+      SELECT o.id, o.current_stage, o.balance, o.total_amount, o.advance, o.customer_id, c.credit_balance
+      FROM Orders o
+      INNER JOIN Customers c ON c.id = o.customer_id
+      WHERE o.id = $1;
+    `, [orderId]);
+    if (!order.rows[0]) throw httpError(404, 'Order not found');
+
+    const orderData = order.rows[0];
+    const remainingBalance = Number(orderData.balance);
+    const balanceAfterPayment = remainingBalance - paymentAmount;
+
+    // Complete the Delivered stage
+    const [flagColumn, atColumn] = stageMap['Delivered'];
+    await run(`
+      UPDATE OrderItems
+      SET ${flagColumn} = true, ${atColumn} = NOW()
+      WHERE order_id = $1;
+    `, [orderId]);
+
+    // Record payment if amount > 0
+    if (paymentAmount > 0) {
+      await run(`
+        INSERT INTO Payments (order_id, payment_date, payment_type, amount, recorded_by)
+        VALUES ($1, NOW(), 'Final', $2, $3);
+      `, [orderId, paymentAmount, req.session.user.id]);
+    }
+
+    // If there's remaining balance, add to customer credit
+    if (balanceAfterPayment > 0) {
+      await run(`
+        UPDATE Customers
+        SET credit_balance = credit_balance + $1
+        WHERE id = $2;
+      `, [balanceAfterPayment, orderData.customer_id]);
+    }
+
+    // Update order status
+    await run(`
+      UPDATE Orders
+      SET current_stage = 'Delivered', status = 'Delivered'
+      WHERE id = $1;
+    `, [orderId]);
+
+    return {
+      order_id: orderId,
+      pickup_name: pickupName,
+      pickup_phone: pickupPhone,
+      payment_amount: paymentAmount,
+      remaining_balance: balanceAfterPayment > 0 ? balanceAfterPayment : 0
+    };
+  });
+
+  res.json({ data });
+});
+
 const orderTracking = asyncHandler(async (req, res) => {
   const orderId = Number(req.params.id);
   
@@ -274,4 +346,4 @@ const orderTracking = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { toggleRules, activeList, toggleStage, orderTracking };
+module.exports = { toggleRules, deliverRules, activeList, toggleStage, deliverOrder, orderTracking };

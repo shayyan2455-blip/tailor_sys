@@ -6,6 +6,7 @@ import DataTable from '../../components/shared/DataTable.jsx';
 import StageCheckboxRow from '../../components/production/StageCheckboxRow.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
 import AssignmentModal from './AssignmentModal.jsx';
+import DeliveryModal from '../../components/production/DeliveryModal.jsx';
 import FormModal from '../../components/shared/FormModal.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatDate } from '../../utils/dateFormat';
@@ -19,6 +20,7 @@ export default function ProductionHub() {
   const [workerPrompt, setWorkerPrompt] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [delivering, setDelivering] = useState(null);
   const { user } = useAuth();
 
   async function load() {
@@ -50,8 +52,14 @@ export default function ProductionHub() {
       return; // already completed, do nothing
     }
 
-    if (stage === 'Ready' || stage === 'Delivered') {
-      // Ready and Delivered stages - move and complete instantly without worker or amount
+    if (stage === 'Delivered') {
+      // Delivered stage - show delivery modal
+      setDelivering(order);
+      return;
+    }
+
+    if (stage === 'Ready') {
+      // Ready stage - move and complete instantly without worker or amount
       moveToAndCompleteStage(order, stage);
       return;
     }
@@ -134,6 +142,21 @@ export default function ProductionHub() {
     }
   }
 
+  async function handleDelivery(deliveryData) {
+    setBusy(`delivery-${deliveryData.order_id}`);
+    try {
+      await productionApi.deliver(deliveryData);
+      setDelivering(null);
+      await load();
+    } catch (err) {
+      console.error('Error delivering order:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.error?.message || err?.message || 'Failed to deliver order';
+      alert(errorMessage);
+    } finally {
+      setBusy('');
+    }
+  }
+
   return (
     <div>
       <div className="page-toolbar d-flex align-items-center justify-content-between mb-2">
@@ -156,6 +179,7 @@ export default function ProductionHub() {
         )
       )} />
       <AssignmentModal show={Boolean(assigning)} order={assigning} onClose={() => setAssigning(null)} />
+      <DeliveryModal show={Boolean(delivering)} order={delivering} onClose={() => setDelivering(null)} onDeliver={handleDelivery} />
       <FormModal 
         show={Boolean(amountPrompt)} 
         title={`Complete ${amountPrompt?.stage} Stage`} 

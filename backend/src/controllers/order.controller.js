@@ -131,6 +131,11 @@ const detail = asyncHandler(async (req, res) => {
 const create = asyncHandler(async (req, res) => {
   validate(req);
   const data = await transaction(req, async (run) => {
+    // Get customer's credit balance
+    const customer = await run('SELECT credit_balance FROM Customers WHERE id = $1;', [Number(req.body.customer_id)]);
+    const customerCredit = Number(customer.rows[0]?.credit_balance || 0);
+    const totalAdvance = Number(req.body.advance || 0) + customerCredit;
+
     const inserted = await run(`
       INSERT INTO Orders(customer_id, order_date, delivery_date, notes, created_by)
       VALUES ($1, $2, $3, $4, $5)
@@ -139,26 +144,42 @@ const create = asyncHandler(async (req, res) => {
     const orderId = inserted.rows[0].id;
     await insertItems(run, orderId, req.body.items);
     await upsertMeasurement(run, orderId, req.body.measurements || {});
-    
+
     // Auto-assign workers based on their default_stage
     const workersWithDefaultStage = await run(`
       SELECT id, default_stage FROM Workers
       WHERE default_stage IS NOT NULL AND is_active = true;
     `);
-    
+
     for (const worker of workersWithDefaultStage.rows) {
       await run(`
         INSERT INTO WorkAssignments(order_id, worker_id, stage)
         VALUES($1, $2, $3);
       `, [orderId, worker.id, worker.default_stage]);
     }
-    
+
+    // Record payments
     if (Number(req.body.advance || 0) > 0) {
       await run(`
         INSERT INTO Payments(order_id, amount, payment_date, payment_type, reference, notes, recorded_by)
         VALUES($1, $2, $3, 'Advance', $4, $5, $6);
       `, [orderId, Number(req.body.advance), req.body.order_date, req.body.advance_reference || null, 'Order advance', req.session.user.id]);
     }
+
+    // If customer has credit balance, record it as a payment and clear the credit
+    if (customerCredit > 0) {
+      await run(`
+        INSERT INTO Payments(order_id, amount, payment_date, payment_type, notes, recorded_by)
+        VALUES($1, $2, $3, 'Advance', $4, $5);
+      `, [orderId, customerCredit, req.body.order_date, 'Applied from customer credit balance', req.session.user.id]);
+
+      await run(`
+        UPDATE Customers
+        SET credit_balance = 0
+        WHERE id = $1;
+      `, [Number(req.body.customer_id)]);
+    }
+
     const summary = await run('SELECT * FROM Orders WHERE id = $1;', [orderId]);
     return summary.rows[0];
   });

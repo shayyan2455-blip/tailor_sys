@@ -28,6 +28,7 @@ CREATE TABLE Customers (
     name VARCHAR(160) NOT NULL,
     mobile VARCHAR(30) NOT NULL,
     address VARCHAR(500) NULL,
+    credit_balance NUMERIC(12,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

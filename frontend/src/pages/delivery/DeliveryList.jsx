@@ -4,10 +4,12 @@ import { orderApi } from '../../api/orderApi';
 import { productionApi } from '../../api/productionApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import StatusBadge from '../../components/production/StatusBadge.jsx';
+import DeliveryModal from '../../components/production/DeliveryModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 export default function DeliveryList() {
   const [rows, setRows] = useState([]);
+  const [delivering, setDelivering] = useState(null);
 
   async function load() {
     const response = await orderApi.deliveryList();
@@ -16,13 +18,16 @@ export default function DeliveryList() {
 
   useEffect(() => { load(); }, []);
 
-  async function markDelivered(row) {
-    if (row.balance > 0) {
-      alert('Order cannot be delivered until the remaining balance is paid');
-      return;
+  async function handleDelivery(deliveryData) {
+    try {
+      await productionApi.deliver(deliveryData);
+      setDelivering(null);
+      await load();
+    } catch (err) {
+      console.error('Error delivering order:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.error?.message || err?.message || 'Failed to deliver order';
+      alert(errorMessage);
     }
-    await productionApi.toggleStage({ order_id: row.id, stage: 'Delivered', completed: true });
-    await load();
   }
 
   return (
@@ -44,9 +49,10 @@ export default function DeliveryList() {
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">
           <Link className="btn btn-outline-secondary" to={`/orders/${row.id}`} title="View"><i className="bi bi-eye" /></Link>
-          <button className="btn btn-outline-success" type="button" onClick={() => markDelivered(row)} title="Mark delivered"><i className="bi bi-truck" /></button>
+          <button className="btn btn-outline-success" type="button" onClick={() => setDelivering(row)} title="Mark delivered"><i className="bi bi-truck" /></button>
         </div>
       )} />
+      <DeliveryModal show={Boolean(delivering)} order={delivering} onClose={() => setDelivering(null)} onDeliver={handleDelivery} />
     </div>
   );
 }
