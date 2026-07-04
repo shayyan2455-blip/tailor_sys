@@ -20,6 +20,7 @@ export default function RecoveryReport() {
     const customerKey = `${row.customer_name}-${row.mobile}`;
     if (!acc[customerKey]) {
       acc[customerKey] = {
+        customer_id: null,
         customer_name: row.customer_name,
         mobile: row.mobile,
         total_balance: 0,
@@ -33,6 +34,10 @@ export default function RecoveryReport() {
     } else {
       acc[customerKey].total_balance += Number(row.balance || 0);
       acc[customerKey].orders.push(row);
+      // Store customer_id from the order
+      if (!acc[customerKey].customer_id && row.customer_id) {
+        acc[customerKey].customer_id = row.customer_id;
+      }
     }
     return acc;
   }, {});
@@ -51,18 +56,21 @@ export default function RecoveryReport() {
 
   async function handlePayment(paymentData) {
     try {
-      // Need to get customer_id from the orders
-      const customerOrders = customerRows.find(c => c.customer_name === payingCustomer.customer_name && c.mobile === payingCustomer.mobile)?.orders || [];
-      if (customerOrders.length > 0) {
-        // Use the customer_id from the first order (all orders belong to same customer)
-        await customerPaymentApi.create({
-          customer_id: customerOrders[0].customer_id,
-          amount: paymentData.payment_amount,
-          payment_type: paymentData.payment_type,
-          payment_date: new Date().toISOString().split('T')[0],
-          notes: `Payment from recovery report for ${payingCustomer.customer_name}`
-        });
+      // Use customer_id from the payingCustomer object
+      const customerId = payingCustomer.customer_id;
+      if (!customerId) {
+        alert('Customer ID not found. Please refresh the page and try again.');
+        return;
       }
+
+      await customerPaymentApi.create({
+        customer_id: customerId,
+        amount: paymentData.payment_amount,
+        payment_type: paymentData.payment_type,
+        payment_date: new Date().toISOString().split('T')[0],
+        notes: `Payment from recovery report for ${payingCustomer.customer_name}`
+      });
+
       setPayingCustomer(null);
       await load();
     } catch (err) {

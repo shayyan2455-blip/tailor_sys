@@ -7,7 +7,7 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
     payment_type: 'Partial'
   });
 
-  const totalBalance = Number(customer?.total_balance || 0);
+  const totalBalance = (Number(customer?.total_balance || 0) + Number(customer?.credit_balance || 0));
   const paymentAmount = Number(form.payment_amount || 0);
 
   function handleSubmit() {
