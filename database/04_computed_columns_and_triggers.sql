@@ -36,9 +36,6 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id) SET @stage = N'Booked';
     ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_delivered = 0) SET @stage = N'Delivered';
     ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_ready = 0) SET @stage = N'Ready';
-    ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_pressing = 0) SET @stage = N'Pressing';
-    ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_alteration = 0) SET @stage = N'Alteration';
-    ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_trial = 0) SET @stage = N'Trial';
     ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_stitching = 0) SET @stage = N'Stitching';
     ELSE IF NOT EXISTS (SELECT 1 FROM dbo.OrderItems WHERE order_id = @order_id AND stage_cutting = 0) SET @stage = N'Cutting';
 

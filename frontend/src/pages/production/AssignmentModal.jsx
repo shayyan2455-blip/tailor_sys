@@ -3,7 +3,7 @@ import FormModal from '../../components/shared/FormModal.jsx';
 import { assignmentApi } from '../../api/assignmentApi';
 import { workerApi } from '../../api/workerApi';
 
-const stages = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
+const stages = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
 
 export default function AssignmentModal({ show, order, onClose }) {
   const [form, setForm] = useState({ worker_id: '', stage: 'Cutting' });

@@ -6,7 +6,7 @@ ALTER TABLE Users
 ALTER TABLE Orders
     ADD CONSTRAINT FK_Orders_Customers FOREIGN KEY (customer_id) REFERENCES Customers(id),
         CONSTRAINT FK_Orders_Users_created_by FOREIGN KEY (created_by) REFERENCES Users(id),
-        CONSTRAINT CK_Orders_stage CHECK (current_stage IN ('Booked','Cutting','Stitching','Trial','Alteration','Pressing','Ready','Delivered')),
+        CONSTRAINT CK_Orders_stage CHECK (current_stage IN ('Booked','Cutting','Stitching','Ready','Delivered')),
         CONSTRAINT CK_Orders_status CHECK (status IN ('Open','Ready','Delivered','Cancelled')),
         CONSTRAINT CK_Orders_money CHECK (total_amount >= 0 AND advance >= 0 AND balance >= 0);
 
@@ -33,7 +33,7 @@ ALTER TABLE Expenses
 ALTER TABLE WorkAssignments
     ADD CONSTRAINT FK_WorkAssignments_Orders FOREIGN KEY (order_id) REFERENCES Orders(id) ON DELETE CASCADE,
         CONSTRAINT FK_WorkAssignments_Workers FOREIGN KEY (worker_id) REFERENCES Workers(id),
-        CONSTRAINT CK_WorkAssignments_stage CHECK (stage IN ('Booked','Cutting','Stitching','Trial','Alteration','Pressing','Ready','Delivered'));
+        CONSTRAINT CK_WorkAssignments_stage CHECK (stage IN ('Booked','Cutting','Stitching','Ready','Delivered'));
 
 CREATE INDEX IX_Customers_mobile ON Customers(mobile);
 CREATE INDEX IX_Customers_name ON Customers(name);

@@ -7,9 +7,6 @@ const stageMap = {
   Booked: ['stage_booked', 'stage_booked_at'],
   Cutting: ['stage_cutting', 'stage_cutting_at'],
   Stitching: ['stage_stitching', 'stage_stitching_at'],
-  Trial: ['stage_trial', 'stage_trial_at'],
-  Alteration: ['stage_alteration', 'stage_alteration_at'],
-  Pressing: ['stage_pressing', 'stage_pressing_at'],
   Ready: ['stage_ready', 'stage_ready_at'],
   Delivered: ['stage_delivered', 'stage_delivered_at']
 };
@@ -51,9 +48,6 @@ const activeList = asyncHandler(async (req, res) => {
            MAX(CAST(stage_booked AS int)) AS stage_booked,
            MAX(CAST(stage_cutting AS int)) AS stage_cutting,
            MAX(CAST(stage_stitching AS int)) AS stage_stitching,
-           MAX(CAST(stage_trial AS int)) AS stage_trial,
-           MAX(CAST(stage_alteration AS int)) AS stage_alteration,
-           MAX(CAST(stage_pressing AS int)) AS stage_pressing,
            MAX(CAST(stage_ready AS int)) AS stage_ready,
            MAX(CAST(stage_delivered AS int)) AS stage_delivered
     FROM OrderItems
@@ -82,9 +76,9 @@ const activeList = asyncHandler(async (req, res) => {
       assignmentsMap[row.order_id] = row;
     }
   });
-  
-  const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
-  const stageColumns = ['stage_booked', 'stage_cutting', 'stage_stitching', 'stage_trial', 'stage_alteration', 'stage_pressing', 'stage_ready', 'stage_delivered'];
+
+  const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
+  const stageColumns = ['stage_booked', 'stage_cutting', 'stage_stitching', 'stage_ready', 'stage_delivered'];
   
   const orders = result.rows.map(order => {
     const stageData = stagesMap[order.id];
@@ -126,7 +120,7 @@ const toggleStage = asyncHandler(async (req, res) => {
     
     const currentStage = order.rows[0].current_stage;
     const balance = order.rows[0].balance;
-    const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
+    const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
     const targetStageIndex = stageOrder.indexOf(stage);
     const currentStageIndex = stageOrder.indexOf(currentStage);
 
@@ -227,13 +221,10 @@ const orderTracking = asyncHandler(async (req, res) => {
   
   // Get stage completions with timestamps
   const stagesResult = await query(req, `
-    SELECT 
+    SELECT
       stage_booked, stage_booked_at,
       stage_cutting, stage_cutting_at,
       stage_stitching, stage_stitching_at,
-      stage_trial, stage_trial_at,
-      stage_alteration, stage_alteration_at,
-      stage_pressing, stage_pressing_at,
       stage_ready, stage_ready_at,
       stage_delivered, stage_delivered_at
     FROM OrderItems
@@ -249,9 +240,9 @@ const orderTracking = asyncHandler(async (req, res) => {
     WHERE we.order_id = $1;
   `, [orderId]);
   
-  const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
-  const stageColumns = ['stage_booked', 'stage_cutting', 'stage_stitching', 'stage_trial', 'stage_alteration', 'stage_pressing', 'stage_ready', 'stage_delivered'];
-  const atColumns = ['stage_booked_at', 'stage_cutting_at', 'stage_stitching_at', 'stage_trial_at', 'stage_alteration_at', 'stage_pressing_at', 'stage_ready_at', 'stage_delivered_at'];
+  const stageOrder = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
+  const stageColumns = ['stage_booked', 'stage_cutting', 'stage_stitching', 'stage_ready', 'stage_delivered'];
+  const atColumns = ['stage_booked_at', 'stage_cutting_at', 'stage_stitching_at', 'stage_ready_at', 'stage_delivered_at'];
   
   const stageData = stagesResult.rows[0] || {};
   const earningsMap = {};

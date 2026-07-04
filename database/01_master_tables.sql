@@ -9,7 +9,7 @@ CREATE TABLE dbo.Workers (
     default_stage NVARCHAR(20) NULL,
     is_active BIT NOT NULL CONSTRAINT DF_Workers_is_active DEFAULT (1),
     created_at DATETIME2(0) NOT NULL CONSTRAINT DF_Workers_created_at DEFAULT (SYSUTCDATETIME()),
-    CONSTRAINT CK_Workers_default_stage CHECK (default_stage IS NULL OR default_stage IN (N'Booked', N'Cutting', N'Stitching', N'Trial', N'Alteration', N'Pressing', N'Ready', N'Delivered'))
+    CONSTRAINT CK_Workers_default_stage CHECK (default_stage IS NULL OR default_stage IN (N'Booked', N'Cutting', N'Stitching', N'Ready', N'Delivered'))
 );
 GO
 

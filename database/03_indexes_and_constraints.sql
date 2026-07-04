@@ -8,7 +8,7 @@ GO
 ALTER TABLE dbo.Orders
     ADD CONSTRAINT FK_Orders_Customers FOREIGN KEY (customer_id) REFERENCES dbo.Customers(id),
         CONSTRAINT FK_Orders_Users_created_by FOREIGN KEY (created_by) REFERENCES dbo.Users(id),
-        CONSTRAINT CK_Orders_stage CHECK (current_stage IN (N'Booked',N'Cutting',N'Stitching',N'Trial',N'Alteration',N'Pressing',N'Ready',N'Delivered')),
+        CONSTRAINT CK_Orders_stage CHECK (current_stage IN (N'Booked',N'Cutting',N'Stitching',N'Ready',N'Delivered')),
         CONSTRAINT CK_Orders_status CHECK (status IN (N'Open',N'Ready',N'Delivered',N'Cancelled')),
         CONSTRAINT CK_Orders_money CHECK (total_amount >= 0 AND advance >= 0 AND balance >= 0);
 GO
@@ -40,7 +40,7 @@ GO
 ALTER TABLE dbo.WorkAssignments
     ADD CONSTRAINT FK_WorkAssignments_Orders FOREIGN KEY (order_id) REFERENCES dbo.Orders(id) ON DELETE CASCADE,
         CONSTRAINT FK_WorkAssignments_Workers FOREIGN KEY (worker_id) REFERENCES dbo.Workers(id),
-        CONSTRAINT CK_WorkAssignments_stage CHECK (stage IN (N'Booked',N'Cutting',N'Stitching',N'Trial',N'Alteration',N'Pressing',N'Ready',N'Delivered'));
+        CONSTRAINT CK_WorkAssignments_stage CHECK (stage IN (N'Booked',N'Cutting',N'Stitching',N'Ready',N'Delivered'));
 GO
 
 CREATE INDEX IX_Customers_mobile ON dbo.Customers(mobile);

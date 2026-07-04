@@ -8,7 +8,7 @@ CREATE TABLE Workers (
     default_stage VARCHAR(20) NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT CK_Workers_default_stage CHECK (default_stage IS NULL OR default_stage IN ('Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'))
+    CONSTRAINT CK_Workers_default_stage CHECK (default_stage IS NULL OR default_stage IN ('Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'))
 );
 
 CREATE TABLE Users (

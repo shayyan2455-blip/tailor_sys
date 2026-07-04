@@ -24,12 +24,6 @@ BEGIN
         stage := 'Delivered';
     ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_ready = false) THEN
         stage := 'Ready';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_pressing = false) THEN
-        stage := 'Pressing';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_alteration = false) THEN
-        stage := 'Alteration';
-    ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_trial = false) THEN
-        stage := 'Trial';
     ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_stitching = false) THEN
         stage := 'Stitching';
     ELSIF NOT EXISTS (SELECT 1 FROM OrderItems WHERE order_id = order_id AND stage_cutting = false) THEN
@@ -37,12 +31,12 @@ BEGIN
     END IF;
 
     UPDATE Orders
-    SET 
+    SET
         current_stage = stage,
-        status = CASE 
+        status = CASE
             WHEN stage = 'Delivered' THEN 'Delivered'
             WHEN stage = 'Ready' THEN 'Ready'
-            ELSE status 
+            ELSE status
         END
     WHERE id = order_id AND status <> 'Cancelled';
 END;

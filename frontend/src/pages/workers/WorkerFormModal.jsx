@@ -3,7 +3,7 @@ import FormModal from '../../components/shared/FormModal.jsx';
 
 const initial = { name: '', mobile: '', default_stage: '', is_active: true };
 
-const stages = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
+const stages = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
 
 export default function WorkerFormModal({ show, record, onClose, onSave }) {
   const [form, setForm] = useState(initial);

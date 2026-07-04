@@ -6,10 +6,7 @@ export default function StatusBadge({ value }) {
     Cancelled: 'text-bg-secondary',
     Booked: 'text-bg-secondary',
     Cutting: 'text-bg-info',
-    Stitching: 'text-bg-warning',
-    Trial: 'text-bg-primary',
-    Alteration: 'text-bg-warning',
-    Pressing: 'text-bg-info'
+    Stitching: 'text-bg-warning'
   };
   return <span className={`badge status-badge ${map[value] || 'text-bg-light'}`}>{value}</span>;
 }

@@ -1,4 +1,4 @@
-const stages = ['Booked', 'Cutting', 'Stitching', 'Trial', 'Alteration', 'Pressing', 'Ready', 'Delivered'];
+const stages = ['Booked', 'Cutting', 'Stitching', 'Ready', 'Delivered'];
 
 export default function StageCheckboxRow({ order, onToggle, busyStage, isWorker = false, completedStages = [] }) {
   return (
