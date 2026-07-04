@@ -8,8 +8,8 @@ const router = express.Router();
 router.use(requireAuth, requireRole('Admin', 'Manager'));
 router.get('/', parsePagination, controller.list);
 router.get('/:id', controller.get);
-router.post('/', auditMiddleware('Worker'), controller.rules, controller.create);
-router.put('/:id', auditMiddleware('Worker'), controller.rules, controller.update);
+router.post('/', auditMiddleware('Worker'), controller.createRules, controller.create);
+router.put('/:id', auditMiddleware('Worker'), controller.updateRules, controller.update);
 router.delete('/:id', auditMiddleware('Worker'), controller.remove);
 
 module.exports = router;
