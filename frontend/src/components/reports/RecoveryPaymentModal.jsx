@@ -6,19 +6,27 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
     payment_amount: '',
     payment_type: 'Partial'
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const totalBalance = (Number(customer?.total_balance || 0) + Number(customer?.credit_balance || 0));
   const paymentAmount = Number(form.payment_amount || 0);
 
-  function handleSubmit() {
-    onPayment({
-      customer_id: customer.customer_id,
-      payment_amount: paymentAmount,
-      payment_type: form.payment_type
-    });
+  async function handleSubmit() {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onPayment({
+        customer_id: customer.customer_id,
+        payment_amount: paymentAmount,
+        payment_type: form.payment_type
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleClose() {
+    if (submitting) return;
     setForm({ payment_amount: '', payment_type: 'Partial' });
     onClose();
   }
@@ -29,7 +37,7 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
       title={`Record Payment - ${customer?.customer_name}`}
       onSubmit={handleSubmit}
       onClose={handleClose}
-      busy={false}
+      busy={submitting}
     >
       <div className="mb-3 p-2 bg-light rounded">
         <div className="d-flex justify-content-between">
@@ -48,6 +56,7 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
           onChange={(e) => setForm({ ...form, payment_amount: e.target.value })}
           required
           autoFocus
+          disabled={submitting}
         />
       </div>
       <div className="mb-3">
@@ -56,6 +65,7 @@ export default function RecoveryPaymentModal({ show, customer, onClose, onPaymen
           className="form-select form-select-sm"
           value={form.payment_type}
           onChange={(e) => setForm({ ...form, payment_type: e.target.value })}
+          disabled={submitting}
         >
           <option value="Partial">Partial</option>
           <option value="Final">Final</option>
