@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { authApi } from '../api/authApi';
@@ -16,6 +16,14 @@ export default function Login() {
   const [resetMode, setResetMode] = useState(false);
   const [forgotForm, setForgotForm] = useState({ username: '', otp: '', newPassword: '', confirmPassword: '' });
   const [message, setMessage] = useState('');
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to={user?.role === 'Worker' ? '/production' : '/'} replace />;
@@ -139,6 +147,17 @@ export default function Login() {
 
   return (
     <main className="login-page d-flex align-items-center justify-content-center">
+      {showSplash && (
+        <div className="splash-screen position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white" style={{ zIndex: 9999, transition: 'opacity 0.5s ease-out' }}>
+          <div className="d-flex align-items-center gap-3 mb-4 fade-in">
+            <i className="bi bi-scissors fs-1 text-primary" />
+            <h1 className="h3 mb-0 fw-bold text-dark">Tailor ERP</h1>
+          </div>
+          <div className="text-muted fade-in-delayed" style={{ fontSize: '0.9rem', letterSpacing: '0.5px' }}>
+            A service by <span className="fw-semibold text-primary">Liberal Tech</span>
+          </div>
+        </div>
+      )}
       <form className="login-panel bg-white border rounded-2 p-3" onSubmit={forgotMode ? (resetMode ? handleResetPassword : otpMode ? handleVerifyOTP : handleForgotPassword) : submit}>
         <div className="d-flex align-items-center gap-2 mb-3">
           <i className="bi bi-scissors fs-4 text-primary" />

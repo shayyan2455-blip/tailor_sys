@@ -26,6 +26,43 @@ body {
   width: min(100%, 360px);
 }
 
+.splash-screen {
+  animation: fadeIn 0.8s ease-in;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.fade-in {
+  animation: slideUpFade 0.8s ease-out;
+}
+
+.fade-in-delayed {
+  animation: slideUpFade 0.8s ease-out 0.3s backwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .erp-shell {
   min-height: 100vh;
 }
