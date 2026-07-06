@@ -16,14 +16,27 @@ function validate(req) {
 
 const list = asyncHandler(async (req, res) => {
   const search = `%${req.query.search || ''}%`;
+  const cursor = Number(req.query.cursor) || 0;
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+  
   const result = await query(req, `
     SELECT id, name, mobile, address, created_at
     FROM Customers
     WHERE ($1 = '%%' OR LOWER(name) LIKE LOWER($1) OR mobile LIKE $1)
-    ORDER BY created_at DESC, id DESC
-    LIMIT 200;
-  `, { search });
-  res.json({ data: result.rows });
+      AND id < $2
+    ORDER BY id DESC
+    LIMIT $3;
+  `, { search, cursor: cursor || 999999999, limit });
+  
+  const nextCursor = result.rows.length > 0 ? result.rows[result.rows.length - 1].id : null;
+  
+  res.json({ 
+    data: result.rows,
+    pagination: {
+      nextCursor,
+      hasMore: result.rows.length === limit
+    }
+  });
 });
 
 const get = asyncHandler(async (req, res) => {

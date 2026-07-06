@@ -23,9 +23,9 @@ const config = {
   port: env.DB_PORT,
   user: env.DB_USER,
   password: env.DB_PASSWORD,
-  max: 10,
+  max: 25,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
   ssl,
 };
 

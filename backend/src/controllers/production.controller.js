@@ -33,13 +33,18 @@ function validate(req) {
 const activeList = asyncHandler(async (req, res) => {
   console.log('Worker ID filter:', req.session.user.role === 'Worker' ? req.session.user.workerId : null);
   
+  const cursor = Number(req.query.cursor) || 0;
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+  
   const result = await query(req, `
     SELECT o.id, o.order_date, o.delivery_date, o.current_stage, o.status, o.total_amount, o.advance, o.balance, c.name AS customer_name
     FROM Orders o
     INNER JOIN Customers c ON c.id = o.customer_id
     WHERE o.status <> 'Delivered'
-    ORDER BY o.delivery_date, o.id;
-  `, []);
+      AND o.id > $1
+    ORDER BY o.id
+    LIMIT $2;
+  `, [cursor, limit]);
   console.log('Query result count:', result.rows.length);
   
   // If no orders, return empty array
@@ -129,7 +134,15 @@ const activeList = asyncHandler(async (req, res) => {
     };
   });
   
-  res.json({ data: orders });
+  const nextCursor = result.rows.length > 0 ? result.rows[result.rows.length - 1].id : null;
+  
+  res.json({ 
+    data: orders,
+    pagination: {
+      nextCursor,
+      hasMore: result.rows.length === limit
+    }
+  });
 });
 
 const toggleStage = asyncHandler(async (req, res) => {

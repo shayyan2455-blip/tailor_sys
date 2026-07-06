@@ -87,6 +87,9 @@ const deliveredOrders = asyncHandler(async (req, res) => {
 
 const recovery = asyncHandler(async (req, res) => {
   try {
+    const cursor = Number(req.query.cursor) || 0;
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+    
     const result = await query(req, `
       SELECT o.id, o.customer_id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
              c.name AS customer_name, c.mobile, c.credit_balance
@@ -95,8 +98,10 @@ const recovery = asyncHandler(async (req, res) => {
         AND o.status <> 'Delivered'
         AND ($1::date IS NULL OR o.order_date >= $1::date)
         AND ($2::date IS NULL OR o.order_date <= $2::date)
-      ORDER BY o.balance DESC, o.delivery_date;
-    `, [req.query.from || null, req.query.to || null]);
+        AND o.id > $3
+      ORDER BY o.id
+      LIMIT $4;
+    `, [req.query.from || null, req.query.to || null, cursor, limit]);
 
     // Also include customers with credit balance (they owe money from previous deliveries)
     const creditResult = await query(req, `
@@ -104,12 +109,22 @@ const recovery = asyncHandler(async (req, res) => {
              c.credit_balance AS balance, c.name AS customer_name, c.mobile, c.credit_balance
       FROM Customers c
       WHERE c.credit_balance > 0
-      ORDER BY c.credit_balance DESC;
-    `, []);
+        AND c.id > $1
+      ORDER BY c.id
+      LIMIT $2;
+    `, [cursor, limit]);
 
     // Combine both results
     const combinedData = [...result.rows, ...creditResult.rows];
-    res.json({ data: combinedData });
+    const nextCursor = combinedData.length > 0 ? Math.max(...combinedData.filter(r => r.id).map(r => r.id)) : null;
+    
+    res.json({ 
+      data: combinedData,
+      pagination: {
+        nextCursor,
+        hasMore: combinedData.length === limit
+      }
+    });
   } catch (error) {
     console.error('Recovery report error:', error);
     throw error;

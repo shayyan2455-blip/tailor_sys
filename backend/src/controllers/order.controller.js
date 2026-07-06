@@ -74,6 +74,9 @@ async function upsertMeasurement(run, orderId, measurements) {
 }
 
 const list = asyncHandler(async (req, res) => {
+  const cursor = Number(req.query.cursor) || 0;
+  const limit = Math.min(Number(req.query.limit) || 50, 100); // Max 100 per page
+  
   const result = await query(req, `
     SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
            o.current_stage, o.status, c.name AS customer_name, c.mobile
@@ -83,13 +86,26 @@ const list = asyncHandler(async (req, res) => {
       AND ($2::text IS NULL OR o.current_stage = $2::text)
       AND ($3::date IS NULL OR o.order_date >= $3::date)
       AND ($4::date IS NULL OR o.order_date <= $4::date)
-    ORDER BY o.order_date DESC, o.id DESC
-    LIMIT 300;
-  `, [req.query.status || null, req.query.stage || null, req.query.from || null, req.query.to || null]);
-  res.json({ data: result.rows });
+      AND o.id < $5
+    ORDER BY o.id DESC
+    LIMIT $6;
+  `, [req.query.status || null, req.query.stage || null, req.query.from || null, req.query.to || null, cursor || 999999999, limit]);
+  
+  const nextCursor = result.rows.length > 0 ? result.rows[result.rows.length - 1].id : null;
+  
+  res.json({ 
+    data: result.rows,
+    pagination: {
+      nextCursor,
+      hasMore: result.rows.length === limit
+    }
+  });
 });
 
 const deliveryList = asyncHandler(async (req, res) => {
+  const cursor = Number(req.query.cursor) || 0;
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+  
   const result = await query(req, `
     SELECT o.id, o.order_date, o.delivery_date, o.total_amount, o.advance, o.balance,
            o.current_stage, o.status, c.name AS customer_name, c.mobile, c.address
@@ -97,10 +113,20 @@ const deliveryList = asyncHandler(async (req, res) => {
     INNER JOIN Customers c ON c.id = o.customer_id
     WHERE o.current_stage = 'Delivered'
       AND o.status <> 'Delivered'
-    ORDER BY o.delivery_date, o.id
-    LIMIT 300;
-  `, []);
-  res.json({ data: result.rows });
+      AND o.id > $1
+    ORDER BY o.id
+    LIMIT $2;
+  `, [cursor, limit]);
+  
+  const nextCursor = result.rows.length > 0 ? result.rows[result.rows.length - 1].id : null;
+  
+  res.json({ 
+    data: result.rows,
+    pagination: {
+      nextCursor,
+      hasMore: result.rows.length === limit
+    }
+  });
 });
 
 const detail = asyncHandler(async (req, res) => {
@@ -163,11 +189,15 @@ const create = asyncHandler(async (req, res) => {
       WHERE default_stage IS NOT NULL AND is_active = true;
     `);
 
-    for (const worker of workersWithDefaultStage.rows) {
+    // Batch insert worker assignments for better performance
+    if (workersWithDefaultStage.rows.length > 0) {
+      const assignmentValues = workersWithDefaultStage.rows
+        .map(w => `(${orderId}, ${w.id}, '${w.default_stage}')`)
+        .join(',');
       await run(`
         INSERT INTO WorkAssignments(order_id, worker_id, stage)
-        VALUES($1, $2, $3);
-      `, [orderId, worker.id, worker.default_stage]);
+        VALUES ${assignmentValues};
+      `, []);
     }
 
     // Record payments
