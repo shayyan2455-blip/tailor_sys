@@ -8,12 +8,34 @@ export default function PendingOrders() {
   const [filters, setFilters] = useState({});
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
-  async function load() { setRows((await reportApi.pendingOrders(filters)).data.data); }
+  const [pagination, setPagination] = useState({ nextCursor: null, hasMore: false });
+  const [loading, setLoading] = useState(false);
+  
+  async function load(cursor = null) {
+    setLoading(true);
+    try {
+      const response = await reportApi.pendingOrders({ ...filters, cursor, limit: 50 });
+      setRows(response.data.data);
+      setPagination(response.data.pagination || { nextCursor: null, hasMore: false });
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  
   useEffect(() => { load(); }, []);
-  return <ReportPage title="Pending Orders" filters={filters} setFilters={setFilters} load={load} rows={rows} search={search} setSearch={setSearch} />;
+  
+  const handleLoadMore = () => {
+    if (pagination.nextCursor && !loading) {
+      load(pagination.nextCursor);
+    }
+  };
+  
+  return <ReportPage title="Pending Orders" filters={filters} setFilters={setFilters} load={load} rows={rows} search={search} setSearch={setSearch} pagination={pagination} onLoadMore={handleLoadMore} loading={loading} />;
 }
 
-function ReportPage({ title, filters, setFilters, load, rows, search, setSearch }) {
+function ReportPage({ title, filters, setFilters, load, rows, search, setSearch, pagination, onLoadMore, loading }) {
   return (
     <div>
       <div className="page-toolbar d-flex align-items-center mb-2"><h1 className="h5 mb-0">{title}</h1></div>
@@ -34,7 +56,7 @@ function ReportPage({ title, filters, setFilters, load, rows, search, setSearch 
           )}
         </div>
       </div>
-      <ReportFilters filters={filters} onChange={setFilters} onRun={load} />
+      <ReportFilters filters={filters} onChange={setFilters} onRun={() => load()} />
       <DataTable searchable externalSearch columns={[
         { key: 'id', label: 'Order' },
         { key: 'customer_name', label: 'Customer' },
@@ -45,6 +67,17 @@ function ReportPage({ title, filters, setFilters, load, rows, search, setSearch 
         { key: 'worker_name', label: 'Worker' },
         { key: 'balance', label: 'Balance' }
       ]} rows={rows} />
+      {pagination.hasMore && (
+        <div className="text-center mt-3">
+          <button 
+            className="btn btn-outline-primary btn-sm"
+            onClick={onLoadMore}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

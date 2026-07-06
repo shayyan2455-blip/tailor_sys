@@ -8,8 +8,30 @@ export default function ReadyOrders() {
   const [filters, setFilters] = useState({});
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
-  async function load() { setRows((await reportApi.readyOrders(filters)).data.data); }
+  const [pagination, setPagination] = useState({ nextCursor: null, hasMore: false });
+  const [loading, setLoading] = useState(false);
+  
+  async function load(cursor = null) {
+    setLoading(true);
+    try {
+      const response = await reportApi.readyOrders({ ...filters, cursor, limit: 50 });
+      setRows(response.data.data);
+      setPagination(response.data.pagination || { nextCursor: null, hasMore: false });
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  
   useEffect(() => { load(); }, []);
+  
+  const handleLoadMore = () => {
+    if (pagination.nextCursor && !loading) {
+      load(pagination.nextCursor);
+    }
+  };
+  
   return (
     <div>
       <div className="page-toolbar d-flex align-items-center mb-2"><h1 className="h5 mb-0">Ready Orders</h1></div>
@@ -30,7 +52,7 @@ export default function ReadyOrders() {
           )}
         </div>
       </div>
-      <ReportFilters filters={filters} onChange={setFilters} onRun={load} />
+      <ReportFilters filters={filters} onChange={setFilters} onRun={() => load()} />
       <DataTable searchable search={search} columns={[
         { key: 'id', label: 'Order' },
         { key: 'customer_name', label: 'Customer' },
@@ -41,6 +63,17 @@ export default function ReadyOrders() {
         { key: 'worker_name', label: 'Worker' },
         { key: 'balance', label: 'Balance' }
       ]} rows={rows} />
+      {pagination.hasMore && (
+        <div className="text-center mt-3">
+          <button 
+            className="btn btn-outline-primary btn-sm"
+            onClick={handleLoadMore}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
