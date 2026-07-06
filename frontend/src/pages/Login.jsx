@@ -147,7 +147,7 @@ export default function Login() {
 
   return (
     <main className="login-page d-flex align-items-center justify-content-center">
-      {showSplash && (
+      {showSplash ? (
         <div className="splash-screen position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white" style={{ zIndex: 9999, transition: 'opacity 0.5s ease-out' }}>
           <div className="d-flex align-items-center gap-3 mb-4 fade-in">
             <i className="bi bi-scissors fs-1 text-primary" />
@@ -157,8 +157,8 @@ export default function Login() {
             A service by <span className="fw-semibold text-primary">Liberal Tech</span>
           </div>
         </div>
-      )}
-      <form className="login-panel bg-white border rounded-2 p-3" onSubmit={forgotMode ? (resetMode ? handleResetPassword : otpMode ? handleVerifyOTP : handleForgotPassword) : submit}>
+      ) : (
+        <form className="login-panel bg-white border rounded-2 p-3" onSubmit={forgotMode ? (resetMode ? handleResetPassword : otpMode ? handleVerifyOTP : handleForgotPassword) : submit}>
         <div className="d-flex align-items-center gap-2 mb-3">
           <i className="bi bi-scissors fs-4 text-primary" />
           <div>
@@ -256,7 +256,8 @@ export default function Login() {
             </button>
           </>
         )}
-      </form>
+        </form>
+      )}
     </main>
   );
 }
