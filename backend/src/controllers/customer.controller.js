@@ -1,6 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const { pg, query } = require('../config/db');
-const { get, set, delPattern } = require('../config/redis');
+const { get: redisGet, set: redisSet, delPattern } = require('../config/redis');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -23,7 +23,7 @@ const list = asyncHandler(async (req, res) => {
   // Try cache first (only for non-search queries)
   const cacheKey = `customers:list:${cursor}:${limit}`;
   if (!search || search === '%%') {
-    const cached = await get(cacheKey);
+    const cached = await redisGet(cacheKey);
     if (cached) {
       return res.json(cached);
     }
@@ -50,7 +50,7 @@ const list = asyncHandler(async (req, res) => {
   
   // Cache non-search results for 5 minutes
   if (!search || search === '%%') {
-    await set(cacheKey, response, 300);
+    await redisSet(cacheKey, response, 300);
   }
   
   res.json(response);

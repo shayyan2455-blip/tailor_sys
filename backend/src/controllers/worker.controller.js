@@ -1,6 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const { pg, query } = require('../config/db');
-const { get, set, delPattern } = require('../config/redis');
+const { get: redisGet, set: redisSet, delPattern } = require('../config/redis');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -28,7 +28,7 @@ function validate(req) {
 const list = asyncHandler(async (req, res) => {
   // Try cache first
   const cacheKey = 'workers:list:all';
-  const cached = await get(cacheKey);
+  const cached = await redisGet(cacheKey);
   if (cached) {
     return res.json(cached);
   }
@@ -42,7 +42,7 @@ const list = asyncHandler(async (req, res) => {
   const response = { data: result.rows };
   
   // Cache for 10 minutes (workers change less frequently)
-  await set(cacheKey, response, 600);
+  await redisSet(cacheKey, response, 600);
   
   res.json(response);
 });
