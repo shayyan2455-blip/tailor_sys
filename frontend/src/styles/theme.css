@@ -63,6 +63,35 @@ body {
   }
 }
 
+.erp-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #e4e7ec;
+  padding: 0.5rem 1rem;
+  z-index: 10;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.erp-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.erp-footer-text {
+  color: #667085;
+}
+
+.erp-footer-brand {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
 .erp-shell {
   min-height: 100vh;
 }
@@ -376,6 +405,7 @@ body {
   flex: 1;
   min-width: 0;
   padding: 0.75rem;
+  padding-bottom: 2.5rem;
 }
 
 .icon-btn {
