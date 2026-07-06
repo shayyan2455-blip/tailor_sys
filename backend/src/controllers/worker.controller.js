@@ -1,5 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const { pg, query } = require('../config/db');
+const { get, set, delPattern } = require('../config/redis');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -25,12 +26,25 @@ function validate(req) {
 }
 
 const list = asyncHandler(async (req, res) => {
+  // Try cache first
+  const cacheKey = 'workers:list:all';
+  const cached = await get(cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+  
   const result = await query(req, `
     SELECT id, name, mobile, wage_rate, default_stage, is_active, created_at
     FROM Workers
     ORDER BY is_active DESC, name;
   `);
-  res.json({ data: result.rows });
+  
+  const response = { data: result.rows };
+  
+  // Cache for 10 minutes (workers change less frequently)
+  await set(cacheKey, response, 600);
+  
+  res.json(response);
 });
 
 const get = asyncHandler(async (req, res) => {
@@ -52,6 +66,10 @@ const create = asyncHandler(async (req, res) => {
     default_stage: req.body.default_stage || null,
     is_active: req.body.is_active !== false
   });
+  
+  // Invalidate worker list cache
+  await delPattern('workers:list:*');
+  
   res.status(201).json({ data: result.rows[0] });
 });
 
@@ -75,12 +93,20 @@ const update = asyncHandler(async (req, res) => {
     id: Number(req.params.id)
   });
   if (!result.rows[0]) throw httpError(404, 'Worker not found');
+  
+  // Invalidate worker list cache
+  await delPattern('workers:list:*');
+  
   res.json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
   const result = await query(req, 'UPDATE Workers SET is_active = false WHERE id = $1 RETURNING id;', { id: Number(req.params.id) });
   if (!result.rows[0]) throw httpError(404, 'Worker not found');
+  
+  // Invalidate worker list cache
+  await delPattern('workers:list:*');
+  
   res.json({ data: { id: result.rows[0].id } });
 });
 

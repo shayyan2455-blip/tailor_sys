@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const env = require('./config/env');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { csrfProtection } = require('./middleware/csrf.middleware');
+const { generalLimiter, authLimiter, strictLimiter, writeLimiter } = require('./middleware/rateLimiter');
 const logger = require('./utils/logger');
 
 // Redis session store (required for production)
@@ -129,31 +130,6 @@ async function createApp() {
     credentials: true
   }));
 
-  // Rate limiting for auth endpoints
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
-    message: 'Too many authentication attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // IP-based in-memory rate limits are unreliable behind serverless proxies.
-      return !rateLimitEnabled;
-    }
-  });
-
-  const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // IP-based in-memory rate limits are unreliable behind serverless proxies.
-      return !rateLimitEnabled;
-    }
-  });
-
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(session({
@@ -179,7 +155,8 @@ async function createApp() {
     next();
   });
 
-  app.use(generalLimiter);
+  // Apply general rate limiter to all API routes
+  app.use('/api', generalLimiter);
 
   // CSRF protection (skip for auth endpoints which have their own rate limiting)
   app.use('/api', (req, res, next) => {
@@ -199,20 +176,20 @@ async function createApp() {
     }
   }));
 
-  // API v1 routes
+  // API v1 routes with specific rate limiters
   app.use('/api/v1/auth', authLimiter, authRoutes);
-  app.use('/api/v1/customers', customerRoutes);
-  app.use('/api/v1/customer-measurements', customerMeasurementRoutes);
-  app.use('/api/v1/customer-payments', customerPaymentRoutes);
-  app.use('/api/v1/workers', workerRoutes);
-  app.use('/api/v1/worker-payments', workerPaymentRoutes);
-  app.use('/api/v1/designs', designRoutes);
-  app.use('/api/v1/fabrics', fabricRoutes);
-  app.use('/api/v1/orders', orderRoutes);
+  app.use('/api/v1/customers', writeLimiter, customerRoutes);
+  app.use('/api/v1/customer-measurements', writeLimiter, customerMeasurementRoutes);
+  app.use('/api/v1/customer-payments', writeLimiter, customerPaymentRoutes);
+  app.use('/api/v1/workers', writeLimiter, workerRoutes);
+  app.use('/api/v1/worker-payments', writeLimiter, workerPaymentRoutes);
+  app.use('/api/v1/designs', writeLimiter, designRoutes);
+  app.use('/api/v1/fabrics', writeLimiter, fabricRoutes);
+  app.use('/api/v1/orders', writeLimiter, orderRoutes);
   app.use('/api/v1/production', productionRoutes);
-  app.use('/api/v1/assignments', assignmentRoutes);
-  app.use('/api/v1/payments', paymentRoutes);
-  app.use('/api/v1/expenses', expenseRoutes);
+  app.use('/api/v1/assignments', strictLimiter, assignmentRoutes);
+  app.use('/api/v1/payments', writeLimiter, paymentRoutes);
+  app.use('/api/v1/expenses', writeLimiter, expenseRoutes);
   app.use('/api/v1/reports', reportRoutes);
   app.use('/api/v1/utility', utilityRoutes);
 
