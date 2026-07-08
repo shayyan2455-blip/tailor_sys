@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
 import { navItems } from './Sidebar.jsx';
 
 const routeDetails = [
@@ -41,6 +42,7 @@ function getRouteDetails(pathname) {
 
 export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobileMenuToggle }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -118,7 +120,7 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
   };
 
   return (
-    <header className="erp-header border-bottom bg-white d-flex align-items-center">
+    <header className="erp-header d-flex align-items-center">
       <div className="erp-header-title d-flex align-items-center">
         <button
           className="btn erp-menu-button icon-btn d-md-none"
@@ -205,7 +207,17 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
           )}
         </form>
 
-        {user && (
+          <button
+            className="btn erp-notification-button d-flex align-items-center justify-content-center"
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <i className={`bi ${theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'}`} />
+          </button>
+
+          {user && (
           <div className="dropdown">
             <button
               className="btn erp-profile-button dropdown-toggle"

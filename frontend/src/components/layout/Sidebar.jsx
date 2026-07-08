@@ -34,7 +34,7 @@ export default function Sidebar({ collapsed, mobileMenuOpen }) {
   const visible = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className={`erp-sidebar border-end bg-white ${collapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+    <aside className={`erp-sidebar ${collapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
       <nav className="nav nav-pills flex-column gap-1 p-2">
         {visible.map((item) => (
           <NavLink 

@@ -8,15 +8,18 @@ import './styles/theme.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { MasterDataProvider } from './context/MasterDataContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <MasterDataProvider>
-          <App />
-        </MasterDataProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MasterDataProvider>
+            <App />
+          </MasterDataProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
