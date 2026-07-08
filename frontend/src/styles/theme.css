@@ -74,6 +74,10 @@
 }
 
 /* ===== Light Mode Overrides ===== */
+[data-theme="light"] .text-primary {
+  color: var(--theme-accent) !important;
+}
+
 [data-theme="light"] .btn-primary {
   background-color: var(--theme-accent);
   border-color: var(--theme-accent);
@@ -252,6 +256,37 @@
 [data-theme="dark"] .page-link {
   background-color: var(--theme-bg-card);
   border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+[data-theme="dark"] .text-primary {
+  color: var(--theme-accent) !important;
+}
+
+[data-theme="dark"] .btn-link {
+  color: var(--theme-accent);
+}
+
+[data-theme="dark"] .btn-link:hover {
+  color: var(--theme-accent);
+  filter: brightness(1.2);
+}
+
+[data-theme="dark"] .border:not(.border-0) {
+  border-color: var(--theme-border) !important;
+}
+
+[data-theme="dark"] .form-check-input {
+  background-color: var(--theme-bg-card);
+  border-color: var(--theme-border);
+}
+
+[data-theme="dark"] .form-check-input:checked {
+  background-color: var(--theme-accent);
+  border-color: var(--theme-accent);
+}
+
+[data-theme="dark"] .form-check-label {
   color: var(--theme-text);
 }
 
