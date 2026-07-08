@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { navItems } from './Sidebar.jsx';
@@ -142,10 +142,10 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
           <i className="bi bi-list" />
         </button>
 
-        <div className="erp-brand d-none d-md-flex align-items-center gap-2 me-3">
+        <Link to="/" className="erp-brand d-none d-md-flex align-items-center gap-2 me-3 text-decoration-none">
           <i className="bi bi-scissors" style={{ color: 'var(--theme-accent)', fontSize: '1.5rem' }} />
           <span className="fw-bold" style={{ color: 'var(--theme-text)', fontSize: '1.25rem' }}>TailorOps</span>
-        </div>
+        </Link>
 
         <div className="erp-page-copy">
           <h1 className="erp-page-title mb-0">{page.title}</h1>
