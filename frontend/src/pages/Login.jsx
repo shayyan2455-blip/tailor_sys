@@ -151,7 +151,7 @@ export default function Login() {
         <div className="splash-screen position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white" style={{ zIndex: 9999, transition: 'opacity 0.5s ease-out' }}>
           <div className="d-flex align-items-center gap-3 mb-4 fade-in">
             <i className="bi bi-scissors fs-1 text-primary" />
-            <h1 className="h3 mb-0 fw-bold text-dark">Tailor ERP</h1>
+            <h1 className="h3 mb-0 fw-bold text-dark">TailorOps</h1>
           </div>
           <div className="text-muted fade-in-delayed" style={{ fontSize: '0.9rem', letterSpacing: '0.5px' }}>
             A service by <span className="fw-semibold text-primary">Liberal Tech</span>
@@ -162,7 +162,7 @@ export default function Login() {
         <div className="d-flex align-items-center gap-2 mb-3">
           <i className="bi bi-scissors fs-4 text-primary" />
           <div>
-            <h1 className="h5 mb-0">Tailor ERP</h1>
+            <h1 className="h5 mb-0">TailorOps</h1>
             <div className="small text-muted">{forgotMode ? 'Password Recovery' : 'Secure staff login'}</div>
           </div>
         </div>

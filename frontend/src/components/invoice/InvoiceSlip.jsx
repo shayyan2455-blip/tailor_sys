@@ -23,7 +23,7 @@ export default function InvoiceSlip({ order, items = [], payments = [], measurem
     <section className="invoice-slip bg-white border rounded-2 p-5">
       <div className="d-flex justify-content-between border-bottom pb-3 mb-4">
         <div>
-          <h2 className="h5 mb-0">Tailor ERP</h2>
+          <h2 className="h5 mb-0">TailorOps</h2>
           <div className="text-muted">Invoice Slip</div>
         </div>
         <div className="text-end">

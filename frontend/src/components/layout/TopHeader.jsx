@@ -35,7 +35,7 @@ function getRouteDetails(pathname) {
   }
 
   return routeDetails.find((route) => route.path === pathname) || {
-    title: 'Tailor ERP',
+    title: 'TailorOps',
     subtitle: 'Manage your tailoring operations'
   };
 }
@@ -141,6 +141,11 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
         >
           <i className="bi bi-list" />
         </button>
+
+        <div className="erp-brand d-none d-md-flex align-items-center gap-2 me-3">
+          <i className="bi bi-scissors fs-5" style={{ color: 'var(--theme-accent)' }} />
+          <span className="fw-bold fs-6" style={{ color: 'var(--theme-text)' }}>TailorOps</span>
+        </div>
 
         <div className="erp-page-copy">
           <h1 className="erp-page-title mb-0">{page.title}</h1>
