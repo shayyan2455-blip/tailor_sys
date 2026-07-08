@@ -28,8 +28,11 @@ const list = asyncHandler(async (req, res) => {
 const create = asyncHandler(async (req, res) => {
   validate(req);
   
+  const expenseId = Number(req.params.expenseId);
+  if (!expenseId || isNaN(expenseId)) throw httpError(400, 'Invalid expense ID');
+  
   // Check if expense exists
-  const expenseCheck = await query(req, 'SELECT id, cost, total_paid, balance FROM Expenses WHERE id = $1;', [Number(req.body.expense_id)]);
+  const expenseCheck = await query(req, 'SELECT id, cost, total_paid, balance FROM Expenses WHERE id = $1;', [expenseId]);
   if (!expenseCheck.rows[0]) throw httpError(404, 'Expense not found');
   
   const expense = expenseCheck.rows[0];
@@ -45,7 +48,7 @@ const create = asyncHandler(async (req, res) => {
     VALUES($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `, [
-    Number(req.body.expense_id),
+    expenseId,
     paymentAmount,
     req.body.payment_date || new Date().toISOString().split('T')[0],
     req.body.payment_type,
@@ -58,6 +61,11 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   validate(req);
   
+  const expenseId = Number(req.params.expenseId);
+  const paymentId = Number(req.params.id);
+  if (!expenseId || isNaN(expenseId)) throw httpError(400, 'Invalid expense ID');
+  if (!paymentId || isNaN(paymentId)) throw httpError(400, 'Invalid payment ID');
+  
   const result = await query(req, `
     UPDATE ExpensePayments
     SET amount=$1, payment_date=$2, payment_type=$3, notes=$4
@@ -68,17 +76,22 @@ const update = asyncHandler(async (req, res) => {
     req.body.payment_date,
     req.body.payment_type,
     req.body.notes || null,
-    Number(req.params.id),
-    Number(req.params.expenseId)
+    paymentId,
+    expenseId
   ]);
   if (!result.rows[0]) throw httpError(404, 'Expense payment not found');
   res.json({ data: result.rows[0] });
 });
 
 const remove = asyncHandler(async (req, res) => {
+  const expenseId = Number(req.params.expenseId);
+  const paymentId = Number(req.params.id);
+  if (!expenseId || isNaN(expenseId)) throw httpError(400, 'Invalid expense ID');
+  if (!paymentId || isNaN(paymentId)) throw httpError(400, 'Invalid payment ID');
+  
   const result = await query(req, 'DELETE FROM ExpensePayments WHERE id=$1 AND expense_id=$2 RETURNING id;', [
-    Number(req.params.id),
-    Number(req.params.expenseId)
+    paymentId,
+    expenseId
   ]);
   if (!result.rows[0]) throw httpError(404, 'Expense payment not found');
   res.json({ data: { id: result.rows[0].id } });
