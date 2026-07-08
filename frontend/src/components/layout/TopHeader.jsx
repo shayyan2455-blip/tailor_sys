@@ -143,8 +143,8 @@ export default function TopHeader({ collapsed, onToggle, mobileMenuOpen, onMobil
         </button>
 
         <div className="erp-brand d-none d-md-flex align-items-center gap-2 me-3">
-          <i className="bi bi-scissors fs-5" style={{ color: 'var(--theme-accent)' }} />
-          <span className="fw-bold fs-6" style={{ color: 'var(--theme-text)' }}>TailorOps</span>
+          <i className="bi bi-scissors" style={{ color: 'var(--theme-accent)', fontSize: '1.5rem' }} />
+          <span className="fw-bold" style={{ color: 'var(--theme-text)', fontSize: '1.25rem' }}>TailorOps</span>
         </div>
 
         <div className="erp-page-copy">
