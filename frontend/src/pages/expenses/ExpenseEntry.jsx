@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { expenseApi } from '../../api/expenseApi';
+import { expensePaymentApi } from '../../api/expensePaymentApi';
 import DataTable from '../../components/shared/DataTable.jsx';
 import ConfirmModal from '../../components/shared/ConfirmModal.jsx';
 import { formatDate } from '../../utils/dateFormat';
 
 const initial = { supplier_name: '', description: '', cost: '', paid_amount: '', balance: '', category: '', expense_date: new Date().toISOString().slice(0, 10) };
+const paymentInitial = { amount: '', payment_type: 'Cash', notes: '', payment_date: new Date().toISOString().slice(0, 10) };
 
 export default function ExpenseEntry() {
   const [rows, setRows] = useState([]);
@@ -13,6 +15,10 @@ export default function ExpenseEntry() {
   const [deleting, setDeleting] = useState(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [paymentModal, setPaymentModal] = useState(null);
+  const [paymentForm, setPaymentForm] = useState(paymentInitial);
+  const [payments, setPayments] = useState([]);
+  const [paymentError, setPaymentError] = useState('');
 
   async function load() {
     const response = await expenseApi.list();
@@ -52,6 +58,40 @@ export default function ExpenseEntry() {
     await expenseApi.remove(deleting.id);
     setDeleting(null);
     await load();
+  }
+
+  async function openPaymentModal(expense) {
+    setPaymentModal(expense);
+    setPaymentForm(paymentInitial);
+    setPaymentError('');
+    try {
+      const response = await expensePaymentApi.list(expense.id);
+      setPayments(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load payments:', error);
+      setPayments([]);
+    }
+  }
+
+  async function submitPayment(event) {
+    event.preventDefault();
+    setPaymentError('');
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+      setPaymentError('Amount must be greater than 0');
+      return;
+    }
+    if (Number(paymentForm.amount) > paymentModal.balance) {
+      setPaymentError(`Payment amount cannot exceed remaining balance (${paymentModal.balance})`);
+      return;
+    }
+    try {
+      await expensePaymentApi.create(paymentModal.id, paymentForm);
+      setPaymentModal(null);
+      setPaymentForm(paymentInitial);
+      await load();
+    } catch (error) {
+      setPaymentError(error?.error?.message || 'Failed to add payment');
+    }
   }
 
   return (
@@ -98,16 +138,127 @@ export default function ExpenseEntry() {
         { key: 'description', label: 'Description' },
         { key: 'category', label: 'Category' },
         { key: 'cost', label: 'Cost' },
-        { key: 'paid_amount', label: 'Paid' },
+        { key: 'total_paid', label: 'Total Paid' },
         { key: 'balance', label: 'Balance' },
         { key: 'recorded_by_name', label: 'Recorded By' }
       ]} rows={rows} actions={(row) => (
         <div className="btn-group btn-group-sm">
+          <button className="btn btn-outline-success" type="button" onClick={() => openPaymentModal(row)} title="Add Payment" disabled={row.balance <= 0}><i className="bi bi-cash-coin" /></button>
           <button className="btn btn-outline-secondary" type="button" onClick={() => edit(row)} title="Edit"><i className="bi bi-pencil" /></button>
           <button className="btn btn-outline-danger" type="button" onClick={() => setDeleting(row)} title="Delete"><i className="bi bi-trash" /></button>
         </div>
       )} />
       <ConfirmModal show={Boolean(deleting)} title="Delete Expense" message={`Delete ${deleting?.description || 'this expense'}?`} onClose={() => setDeleting(null)} onConfirm={remove} />
+      
+      {/* Payment Modal */}
+      {paymentModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Add Payment - {paymentModal.description}</h5>
+                <button type="button" className="btn-close" onClick={() => setPaymentModal(null)} />
+              </div>
+              <div className="modal-body">
+                {paymentError && <div className="alert alert-danger py-2 small">{paymentError}</div>}
+                <div className="mb-3">
+                  <label className="form-label small">Total Cost</label>
+                  <input className="form-control form-control-sm" value={paymentModal.cost} readOnly />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small">Already Paid</label>
+                  <input className="form-control form-control-sm" value={paymentModal.total_paid || 0} readOnly />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small">Remaining Balance</label>
+                  <input className="form-control form-control-sm" value={paymentModal.balance} readOnly />
+                </div>
+                <form onSubmit={submitPayment}>
+                  <div className="mb-3">
+                    <label className="form-label small">Payment Amount</label>
+                    <input 
+                      className="form-control form-control-sm" 
+                      type="number" 
+                      min="0.01" 
+                      step="0.01" 
+                      max={paymentModal.balance}
+                      value={paymentForm.amount} 
+                      onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })} 
+                      required 
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small">Payment Type</label>
+                    <select 
+                      className="form-select form-select-sm" 
+                      value={paymentForm.payment_type} 
+                      onChange={(e) => setPaymentForm({ ...paymentForm, payment_type: e.target.value })}
+                      required
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="Check">Check</option>
+                      <option value="Online">Online</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small">Payment Date</label>
+                    <input 
+                      className="form-control form-control-sm" 
+                      type="date" 
+                      value={paymentForm.payment_date} 
+                      onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                      required 
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small">Notes</label>
+                    <textarea 
+                      className="form-control form-control-sm" 
+                      rows="2"
+                      value={paymentForm.notes} 
+                      onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                      placeholder="Optional notes"
+                    />
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button type="submit" className="btn btn-primary btn-sm">Add Payment</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPaymentModal(null)}>Cancel</button>
+                  </div>
+                </form>
+                
+                {payments.length > 0 && (
+                  <div className="mt-4">
+                    <h6 className="small mb-2">Payment History</h6>
+                    <div className="table-responsive">
+                      <table className="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Recorded By</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map((payment) => (
+                            <tr key={payment.id}>
+                              <td>{formatDate(payment.payment_date)}</td>
+                              <td>{Number(payment.amount).toFixed(2)}</td>
+                              <td>{payment.payment_type}</td>
+                              <td>{payment.recorded_by_name}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

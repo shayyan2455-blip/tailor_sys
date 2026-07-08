@@ -25,6 +25,28 @@ const list = asyncHandler(async (req, res) => {
       AND ($2::date IS NULL OR e.expense_date <= $2::date)
     ORDER BY e.expense_date DESC, e.id DESC;
   `, [req.query.from || null, req.query.to || null]);
+  
+  // Get payment counts for each expense
+  const expenseIds = result.rows.map(e => e.id);
+  const paymentCounts = {};
+  if (expenseIds.length > 0) {
+    const paymentResult = await query(req, `
+      SELECT expense_id, COUNT(*) AS payment_count
+      FROM ExpensePayments
+      WHERE expense_id = ANY($1)
+      GROUP BY expense_id
+    `, [expenseIds]);
+    paymentResult.rows.forEach(row => {
+      paymentCounts[row.expense_id] = row.payment_count;
+    });
+  }
+  
+  // Add payment count to each expense
+  result.rows = result.rows.map(expense => ({
+    ...expense,
+    payment_count: paymentCounts[expense.id] || 0
+  }));
+  
   res.json({ data: result.rows });
 });
 

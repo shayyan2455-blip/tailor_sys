@@ -89,6 +89,7 @@ async function createApp() {
   const assignmentRoutes = require('./routes/assignment.routes');
   const paymentRoutes = require('./routes/payment.routes');
   const expenseRoutes = require('./routes/expense.routes');
+  const expensePaymentRoutes = require('./routes/expensePayment.routes');
   const reportRoutes = require('./routes/report.routes');
   const utilityRoutes = require('./routes/utility.routes');
 
@@ -190,6 +191,7 @@ async function createApp() {
   app.use('/api/v1/assignments', strictLimiter, assignmentRoutes);
   app.use('/api/v1/payments', writeLimiter, paymentRoutes);
   app.use('/api/v1/expenses', writeLimiter, expenseRoutes);
+  app.use('/api/v1/expense-payments', writeLimiter, expensePaymentRoutes);
   app.use('/api/v1/reports', reportRoutes);
   app.use('/api/v1/utility', utilityRoutes);
 
