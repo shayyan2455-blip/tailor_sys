@@ -202,6 +202,11 @@
   --bs-table-border-color: var(--theme-border);
   --bs-table-striped-bg: var(--theme-hover);
   --bs-table-hover-bg: var(--theme-active-bg);
+  --bs-table-hover-color: var(--theme-text);
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover a {
+  color: var(--theme-text);
 }
 
 [data-theme="dark"] .card {
