@@ -30,12 +30,7 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
-      <footer className="erp-footer">
-        <div className="erp-footer-content">
-          <span className="erp-footer-text">A service by </span>
-          <span className="erp-footer-brand">Liberal Tech</span>
-        </div>
-      </footer>
+
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div 
