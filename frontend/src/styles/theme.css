@@ -102,11 +102,11 @@
 }
 
 [data-theme="light"] .text-primary,
-[data-theme="light"] a:not(.btn):not(.nav-link):not(.dropdown-item) {
+[data-theme="light"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.quick-action) {
   color: var(--theme-accent) !important;
 }
 
-[data-theme="light"] a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+[data-theme="light"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.quick-action):hover {
   color: #43a047;
 }
 
