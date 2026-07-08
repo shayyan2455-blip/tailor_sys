@@ -4,7 +4,6 @@ const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
 const rules = [
-  body('expense_id').isInt().withMessage('Expense ID is required'),
   body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
   body('payment_type').trim().notEmpty().withMessage('Payment type is required').isLength({ max: 20 }),
   body('notes').optional({ nullable: true }).trim().isLength({ max: 500 })
