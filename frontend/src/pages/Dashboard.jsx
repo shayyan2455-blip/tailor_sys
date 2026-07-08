@@ -319,10 +319,6 @@ export default function Dashboard() {
         const payments = allPayments.filter((payment) => inRange(payment.payment_date, range.start, range.end));
         const previousPayments = allPayments.filter((payment) => inRange(payment.payment_date, range.previousStart, range.previousEnd));
 
-        const orderDetails = await Promise.all(
-          orders.map((order) => orderApi.detail(order.id).then((response) => response.data.data).catch(() => null))
-        );
-
         if (!alive) return;
 
         const activeProduction = allProductionOrders.filter((order) => order.status !== 'Delivered' && order.current_stage !== 'Ready');
