@@ -158,7 +158,7 @@ const profit = asyncHandler(async (req, res) => {
       FROM Payments
       WHERE ($1::date IS NULL OR payment_date >= $1::date) AND ($2::date IS NULL OR payment_date <= $2::date)
       UNION ALL
-      SELECT 'Expense' AS label, COALESCE(SUM(total_paid), 0) AS amount
+      SELECT 'Expense' AS label, COALESCE(SUM(COALESCE(total_paid, paid_amount, 0)), 0) AS amount
       FROM Expenses
       WHERE ($1::date IS NULL OR expense_date >= $1::date) AND ($2::date IS NULL OR expense_date <= $2::date)
       UNION ALL
